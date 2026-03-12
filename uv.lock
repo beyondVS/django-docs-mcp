@@ -276,9 +276,6 @@ wheels = [
 name = "django-docs-mcp"
 version = "0.1.0"
 source = { virtual = "." }
-dependencies = [
-    { name = "django" },
-]
 
 [package.dev-dependencies]
 dev = [
@@ -289,7 +286,6 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "django", specifier = "~=5.2.0" }]
 
 [package.metadata.requires-dev]
 dev = [
@@ -302,9 +298,13 @@ dev = [
 [[package]]
 name = "django-server"
 version = "0.1.0"
-source = { virtual = "django_server" }
+source = { editable = "django_server" }
+dependencies = [
+    { name = "django" },
+]
 
 [package.metadata]
+requires-dist = [{ name = "django", specifier = "~=5.2.0" }]
 
 [package.metadata.requires-dev]
 dev = []
@@ -693,11 +693,15 @@ name = "mcp-server"
 version = "0.1.0"
 source = { virtual = "mcp_server" }
 dependencies = [
+    { name = "django-server" },
     { name = "fastmcp" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "fastmcp", specifier = ">=3.1.0" }]
+requires-dist = [
+    { name = "django-server", editable = "django_server" },
+    { name = "fastmcp", specifier = ">=3.1.0" },
+]
 
 [[package]]
 name = "mdurl"

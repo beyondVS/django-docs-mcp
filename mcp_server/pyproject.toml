@@ -5,4 +5,8 @@ description = "Add your description here"
 requires-python = ">=3.14"
 dependencies = [
     "fastmcp>=3.1.0",
+    "django-server",
 ]
+
+[tool.uv.sources]
+django-server = { workspace = true }
