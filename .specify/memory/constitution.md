@@ -1,0 +1,64 @@
+<!--
+Sync Impact Report:
+- 헌법 버전: 1.5.0 (프로젝트 폴더 구조 및 문서 SSOT 원칙 명시화)
+- 수정 내용:
+  - 2026-03-12: II. 아키텍처 원칙에 '문서 단일 진실 공급원 (SSOT) 및 폴더 구조' 항목(5번) 신설 및 구체화.
+  - 2026-03-12: `data_sources/`, `specs/_architecture/`, `specs/` 등 주요 폴더의 용도와 에이전트 준수 의무 명시.
+- 업데이트 확인 템플릿:
+  - `.specify/templates/plan-template.md` (수동 확인 권장 - 폴더 구조 참조 확인)
+  - `.specify/templates/spec-template.md` (수동 확인 권장 - 문서 동기화 의무 반영)
+  - `.specify/templates/tasks-template.md` (유효)
+-->
+
+# Django Docs MCP 헌법(Constitution)
+
+## 프로젝트 개요
+AI 에이전트가 환각(Hallucination) 없이 Django 공식 가이드와 코드를 정확히 검색할 수 있도록 지원하는 RAG(검색 증강 생성) 기반 지식 통합 MCP(Model Context Protocol) 서버 구축 프로젝트.
+
+## I. 핵심 철학 (Core Philosophy)
+1. **자기 평가 및 반복 (Self-Evaluation & Iteration)**: 세계 최고 수준의 평가 기준을 수립하고, 만점을 받을 때까지 스스로 반복 개선(Self-Correction)한 뒤 최종 결과만 제시합니다.
+2. **실용주의 (Pragmatism)**: Over-engineering을 엄격히 금지합니다. 복잡도를 비용으로 간주하여 가장 단순하고 명확한 해결책을 우선합니다.
+3. **사고 과정 (Thinking Process)**: 코드 작성 전 단계별 계획을 수립하여 논리적 비약을 방지하며, 기존 기능의 파괴 가능성을 먼저 검토합니다.
+4. **한국어 최우선 (Language First)**: 모든 대화, 문서, 커밋 메시지는 한국어를 사용합니다. 단, 변수명/클래스명 등 코드 식별자는 영어를 사용합니다.
+
+## II. 아키텍처 원칙 (Architectural Principles)
+1. **컨테이너 우선 (Container-First)**: 모든 로컬 개발 환경과 인프라는 Docker 및 Docker Compose를 통해 일관되게 실행되어야 합니다.
+2. **책임 및 컴포넌트 분리 (Separation of Concerns)**: 외부 데이터 수집(Crawler), 데이터 관리(Django), AI 에이전트 서빙(FastMCP) 역할을 엄격히 분리합니다.
+3. **데이터 계층화 (Data Hierarchy)**: 지식 데이터는 출처(Source) > 개별 문서(Document) > 파편(Chunk)의 3단계 구조를 엄격히 준수합니다.
+4. **의미론적 청킹 (Strict Semantic Chunking)**: 마크다운 구조 기반 분할을 적용하며, 파이썬 코드 블록은 절대 분할하지 않습니다.
+5. **문서 단일 진실 공급원 (SSOT) 및 폴더 구조**: 프로젝트의 주요 데이터와 설계는 다음과 같이 관리되며, 모든 에이전트는 이를 엄격히 준수해야 합니다.
+   - **`data_sources/`**: 크롤링된 마크다운 원본 및 벡터 데이터베이스. (대량의 데이터가 존재하므로, 에이전트는 전체 검색 시 이 폴더를 피하고 테스트나 로직 검증 시에만 명시적으로 접근해야 합니다.)
+   - **`specs/_architecture/` (SSOT)**: 시스템 전체 아키텍처와 기획의 기준이 되는 단일 진실 공급원입니다. 주요 문서는 다음과 같습니다:
+     - `project_proposal.md` (프로젝트 방향성 및 요구사항)
+     - `architecture_design.md` (시스템 구조 및 데이터 흐름)
+     - `embedding_strategy.md` (데이터 청킹 및 임베딩 전략)
+     - `database_schema.md` (데이터베이스 구조)
+     - `mcp_tools_contract.md` (외부 에이전트/서비스와의 API 규약 및 인터페이스 계약)
+   - **`specs/###-title/`**: 개별 구현 작업(Task)을 위한 임시/진행형 명세 공간입니다.
+   - **[문서 동기화 의무]** `specs/` 하위에서 진행되는 개별 작업으로 인해 설계 방향이 변경될 경우, 반드시 `specs/_architecture/` 하위의 원본 설계 문서들을 함께 업데이트하여 일관성을 유지합니다.
+
+## III. 기술 표준 (Technical Standards)
+1. **기술 스택**:
+   - Language: Python 3.14 (Type 준수 의무)
+   - Framework: Django (Backend), FastMCP (Serving)
+   - Database: PostgreSQL + pgvector (HNSW 인덱스)
+   - Embedding: BAAI/bge-m3 (1024차원)
+2. **명시적 계약 (Explicit Contracts)**:
+   - MCP 도구의 구체적인 입출력 규격은 분리된 API 계약서(`specs/_architecture/mcp_tools_contract.md`)를 엄격히 준수해야 합니다.
+
+## IV. 엔지니어링 표준 (Engineering Excellence)
+1. **Lint & Format**: **Ruff**를 사용하여 코드 스타일과 품질을 강제하며, 설정된 규칙을 반드시 통과해야 합니다.
+2. **Type Safety**: 모든 함수의 인자와 반환값에 Type Hints를 반드시 적용합니다. (`mypy` 통과 권장)
+3. **Documentation**: 모든 공개 API에는 Google Style Docstring을 작성하여 목적과 예외를 명시합니다.
+4. **Practical Async**: FastMCP 도구는 **비동기(`async`)**로 구현하며, Django는 프레임워크가 지원하는 범위 내에서 최대한 비동기(Async Views/ORM)를 활용합니다.
+
+## V. 품질 및 보안 (Quality & Security)
+1. **RAG 품질 보증**: 모든 검색 로직 변경 시 골든 데이터셋(정답셋)을 통한 검색 정확도(Recall/MRR)를 검증해야 합니다.
+2. **관측 가능성 (Observability)**: 모든 MCP 도구 호출은 입력, 반환된 청크 ID, 검색 점수를 포함하여 구조화된 로그(JSON)를 남깁니다.
+3. **최소 권한 및 보안**: 데이터베이스 및 API 접근은 최소 권한 원칙을 따르며, 사용자 입력 쿼리에 대한 살균(Sanitization)을 수행합니다.
+
+## 거버넌스(Governance)
+본 헌법은 Django Docs MCP 프로젝트의 근간이며, 모든 PR 및 코드 리뷰의 기준이 됩니다.
+에이전트의 구체적인 행동 지침과 Git 워크플로우는 `AGENTS.md`를 따릅니다.
+
+**버전**: 1.5.0 | **비준일**: 2026-03-12 | **최종 수정일**: 2026-03-12

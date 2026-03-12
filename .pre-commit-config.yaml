@@ -1,0 +1,56 @@
+# .pre-commit-config.yaml
+# `git commit` 실행 시 자동으로 코드 품질을 검사합니다.
+
+repos:
+  # ==========================================================================
+  # 1. Ruff (Linter & Formatter)
+  # 초고속 파이썬 린터 및 포매터. 로컬 환경(uv)에 설치된 ruff를 실행합니다.
+  # ==========================================================================
+  - repo: local
+    hooks:
+      - id: ruff
+        name: ruff-lint
+        description: "Run 'ruff check' for extremely fast Python linting"
+        entry: uv run ruff check --force-exclude
+        language: system
+        types_or: [python, pyi]
+        args: [--fix] # 자동으로 고칠 수 있는 오류는 커밋 시 바로 고쳐줍니다.
+        require_serial: true
+
+      - id: ruff-format
+        name: ruff-format
+        description: "Run 'ruff format' for extremely fast Python formatting"
+        entry: uv run ruff format --force-exclude
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+
+  # ==========================================================================
+  # 2. Mypy (Static Type Checker)
+  # 로컬 환경(uv)에 설치된 mypy와 django-stubs를 활용해 타입 검사를 수행합니다.
+  # ==========================================================================
+  - repo: local
+    hooks:
+      - id: mypy
+        name: mypy
+        description: "Run 'mypy' for static type checking"
+        entry: uv run mypy
+        language: system
+        types_or: [python, pyi]
+        require_serial: true
+        # 주의: Mypy는 프로젝트 전체 맥락을 알아야 하는 경우가 많아
+        # 특정 파일만 커밋할 때보다 전체를 돌릴 때 가장 정확합니다.
+
+  # ==========================================================================
+  # 3. Pre-commit 기본 훅 (안전 장치)
+  # ==========================================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: \.pyi?$  # Python 파일은 Ruff가 담당하므로 제외
+      - id: end-of-file-fixer
+        exclude: \.pyi?$  # Python 파일은 Ruff가 담당하므로 제외
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
