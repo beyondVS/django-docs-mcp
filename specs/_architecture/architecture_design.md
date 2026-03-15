@@ -45,12 +45,12 @@ graph LR
         %% 데이터 적재 파트
         subgraph Ingestion_Layer [데이터 수집 및 적재 계층]
             direction TB
-            Crawler[1. Crawler Script<br/>- 외부 웹/문서 다운로드]:::worker
-            LocalFile[(2. 로컬 마크다운 파일<br/>Volume Mount)]:::file
-            DjangoCmd[3. Django Command<br/>- 청킹 & 임베딩 수행]:::worker
+            Crawler[1. Crawler Script<br/>- httpx/readability 기반 수집]:::worker
+            LocalFile[(2. 로컬 마크다운 파일<br/>data_sources/ 계층 구조)]:::file
+            DjangoCmd[3. Django Command<br/>- YAML 메타데이터 파싱 및 적재]:::worker
 
-            Crawler -- 저장 --> LocalFile
-            LocalFile -- 파싱 --> DjangoCmd
+            Crawler -- "URL 계층 저장" --> LocalFile
+            LocalFile -- "Front Matter 파싱" --> DjangoCmd
         end
 
         %% 데이터베이스 파트
