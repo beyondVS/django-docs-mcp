@@ -212,26 +212,20 @@ dependencies = [
     { name = "httpx" },
     { name = "lxml" },
     { name = "markdownify" },
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
     { name = "pyyaml" },
     { name = "readability-lxml" },
-    { name = "respx" },
     { name = "tenacity" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "beautifulsoup4", specifier = ">=4.14.3" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "lxml", specifier = ">=6.0.2" },
-    { name = "markdownify", specifier = ">=1.2.2" },
-    { name = "pytest", specifier = ">=9.0.2" },
-    { name = "pytest-asyncio", specifier = ">=1.3.0" },
-    { name = "pyyaml", specifier = ">=6.0.3" },
-    { name = "readability-lxml", specifier = ">=0.8.4.1" },
-    { name = "respx", specifier = ">=0.22.0" },
-    { name = "tenacity", specifier = ">=9.1.4" },
+    { name = "beautifulsoup4", specifier = "~=4.14.3" },
+    { name = "httpx", specifier = "~=0.28.1" },
+    { name = "lxml", specifier = "~=6.0.2" },
+    { name = "markdownify", specifier = "~=1.2.2" },
+    { name = "pyyaml", specifier = "~=6.0.3" },
+    { name = "readability-lxml", specifier = "~=0.8.4.1" },
+    { name = "tenacity", specifier = "~=9.1.4" },
 ]
 
 [package.metadata.requires-dev]
@@ -350,6 +344,9 @@ dev = [
     { name = "django-stubs", extra = ["compatible-mypy"] },
     { name = "mypy" },
     { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-asyncio" },
+    { name = "respx" },
     { name = "ruff" },
 ]
 
@@ -361,6 +358,9 @@ dev = [
     { name = "django-stubs", extras = ["compatible-mypy"], specifier = "~=5.2.9" },
     { name = "mypy", specifier = "~=1.19.1" },
     { name = "pre-commit", specifier = "~=4.5.1" },
+    { name = "pytest", specifier = "~=9.0.2" },
+    { name = "pytest-asyncio", specifier = "~=1.3.0" },
+    { name = "respx", specifier = "~=0.22.0" },
     { name = "ruff", specifier = "~=0.15.5" },
 ]
 
