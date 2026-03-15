@@ -18,7 +18,7 @@ uv add httpx readability-lxml markdownify tenacity PyYAML beautifulsoup4 lxml
 
 ### Django ORM Cookbook 수집
 ```bash
-python crawler/orm_cookbook.py
+uv run --project crawler python crawler/orm_cookbook.py
 ```
 
 ## 3. 결과 확인
@@ -37,3 +37,5 @@ collected_at: 2026-03-15T...
 ## 4. 문제 해결
 - **429 Too Many Requests**: 크롤러가 자동으로 지수 백오프 대기 후 재시도합니다. 강제로 중단하지 말고 기다려 주십시오.
 - **lxml 설치 오류**: Python 3.14 환경에서 lxml 빌드 실패 시, 시스템에 `libxml2`, `libxslt` 개발 헤더가 설치되어 있는지 확인하십시오.
+- **추출 실패 시 폴백**: 본문 추출 시 `readability-lxml`이 실패할 경우, 내부적으로 `BeautifulSoup`을 사용하여 주요 CSS 컨테이너(`.section`, `main` 등)를 탐색하도록 폴백(Fallback) 처리되어 있습니다. 빈 내용이 저장될 경우 `converter.py`의 폴백 셀렉터를 추가할 수 있습니다.
+- **인코딩 오류**: 파일 시스템이 UTF-8을 기본으로 사용하지 않는 환경(예: 일부 Windows)에서 인코딩 문제가 발생하면 Python 환경이 UTF-8을 사용하도록 설정하세요.

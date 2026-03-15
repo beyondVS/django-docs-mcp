@@ -11,9 +11,9 @@
 
 **목적**: 프로젝트 초기화 및 기본 구조 설정
 
-- [ ] T001 [P] `crawler/` 및 `crawler/utils/` 디렉토리 구조 생성
-- [ ] T002 [P] `pyproject.toml`에 `httpx`, `readability-lxml`, `markdownify`, `tenacity`, `PyYAML`, `beautifulsoup4`, `lxml` 의존성 추가 및 `uv sync` 실행
-- [ ] T003 [P] `.ruff.toml` 또는 `pyproject.toml`에 Python 3.14 타입 체크 및 린팅 설정 추가
+- [x] T001 [P] `crawler/` 및 `crawler/utils/` 디렉토리 구조 생성
+- [x] T002 [P] `pyproject.toml`에 `httpx`, `readability-lxml`, `markdownify`, `tenacity`, `PyYAML`, `beautifulsoup4`, `lxml` 의존성 추가 및 `uv sync` 실행
+- [x] T003 [P] `.ruff.toml` 또는 `pyproject.toml`에 Python 3.14 타입 체크 및 린팅 설정 추가
 
 ---
 
@@ -21,10 +21,10 @@
 
 **목적**: 크롤링 및 변환 파이프라인을 위한 핵심 유틸리티 구현
 
-- [ ] T004 `crawler/utils/scraper.py`에 `httpx` 및 `tenacity`를 활용한 지수 백오프 기반 비동기 크롤러 유틸리티 구현
-- [ ] T005 `crawler/utils/converter.py`에 `readability-lxml` 본문 추출 및 실패 시 CSS 셀렉터 기반 폴백 로직(BeautifulSoup)을 포함한 변환 파이프라인 구현
-- [ ] T006 `crawler/utils/storage.py`에 URL 계층 구조를 반영한 파일 저장 및 경로 관리 로직 구현
-- [ ] T007 `crawler/utils/logger.py`에 크롤링 상태 및 에러 로깅을 위한 공통 로거 설정
+- [x] T004 `crawler/utils/scraper.py`에 `httpx` 및 `tenacity`를 활용한 지수 백오프 기반 비동기 크롤러 유틸리티 구현
+- [x] T005 `crawler/utils/converter.py`에 `readability-lxml` 본문 추출 및 실패 시 CSS 셀렉터 기반 폴백 로직(BeautifulSoup)을 포함한 변환 파이프라인 구현
+- [x] T006 `crawler/utils/storage.py`에 URL 계층 구조를 반영한 파일 저장 및 경로 관리 로직 구현
+- [x] T007 `crawler/utils/logger.py`에 크롤링 상태 및 에러 로깅을 위한 공통 로거 설정
 
 **체크포인트**: 기초 작업 완료 - 공통 유틸리티가 준비되어 각 Cookbook별 크롤러 구현을 시작할 수 있습니다.
 
@@ -38,15 +38,15 @@
 
 ### 사용자 스토리 1 & 2 테스트 (선택 사항)
 
-- [ ] T008 [P] [US1] `crawler/tests/test_scraper.py`에 `httpx` 모킹을 통한 비동기 요청 및 재시도 로직 단위 테스트 작성
-- [ ] T009 [P] [US2] `crawler/tests/test_converter.py`에 샘플 HTML을 활용한 마크다운 변환 및 코드 블록 보존 테스트 작성
+- [x] T008 [P] [US1] `crawler/tests/test_scraper.py`에 `httpx` 모킹을 통한 비동기 요청 및 재시도 로직 단위 테스트 작성
+- [x] T009 [P] [US2] `crawler/tests/test_converter.py`에 샘플 HTML을 활용한 마크다운 변환 및 코드 블록 보존 테스트 작성
 
 ### 사용자 스토리 1 & 2 구현
 
-- [ ] T010 [US1] `crawler/orm_cookbook.py`에 ORM Cookbook 시작 URL 및 탐색 범위 정의 (내부 도메인 한정)
-- [ ] T011 [US1] `crawler/orm_cookbook.py`에 재귀적 링크 탐색 및 URL + 콘텐츠 해시(SHA256) 기반 중복 제거 로직 구현
-- [ ] T012 [US2] `crawler/orm_cookbook.py`에 수집된 HTML을 `converter.py`를 통해 마크다운으로 변환하는 파이프라인 통합
-- [ ] T013 [US1] `crawler/orm_cookbook.py`에 변환된 내용을 `storage.py`를 통해 `data_sources/django2-orm-cookbook/`에 저장하는 로직 연동
+- [x] T010 [US1] `crawler/orm_cookbook.py`에 ORM Cookbook 시작 URL 및 탐색 범위 정의 (내부 도메인 한정)
+- [x] T011 [US1] `crawler/orm_cookbook.py`에 재귀적 링크 탐색 및 URL + 콘텐츠 해시(SHA256) 기반 중복 제거 로직 구현
+- [x] T012 [US2] `crawler/orm_cookbook.py`에 수집된 HTML을 `converter.py`를 통해 마크다운으로 변환하는 파이프라인 통합
+- [x] T013 [US1] `crawler/orm_cookbook.py`에 변환된 내용을 `storage.py`를 통해 `data_sources/django2-orm-cookbook/`에 저장하는 로직 연동
 
 ---
 
@@ -58,8 +58,8 @@
 
 ### 사용자 스토리 3 구현
 
-- [ ] T014 [US3] `crawler/utils/converter.py`에 YAML Front Matter 생성 로직 추가 (`source_url`, `target_version: 2.x`, `collected_at`)
-- [ ] T015 [US3] `crawler/tests/test_metadata.py`를 작성하여 모든 저장된 파일에 필수 메타데이터가 포함되어 있는지 검증
+- [x] T014 [US3] `crawler/utils/converter.py`에 YAML Front Matter 생성 로직 추가 (`source_url`, `target_version: 2.x`, `collected_at`)
+- [x] T015 [US3] `crawler/tests/test_metadata.py`를 작성하여 모든 저장된 파일에 필수 메타데이터가 포함되어 있는지 검증
 
 ---
 
@@ -67,9 +67,9 @@
 
 **목적**: 안정성 강화 및 문서화
 
-- [ ] T016 [P] `crawler/utils/scraper.py`에 429 Too Many Requests 대응을 위한 동적 적응형 지연 로직 추가
-- [ ] T017 `README.md` 및 `specs/001-crawl-django-docs/quickstart.md`에 실행 방법 및 주요 장애(네트워크 타임아웃, 인코딩 오류, 추출 실패 시 폴백) 대응 가이드 업데이트
-- [ ] T018 전체 수집 프로세스 실행 및 `data_sources/` 결과물의 UTF-8 인코딩 및 마크다운 구조 최종 검수 (최소 10개 이상의 무작위 샘플링 검수 포함)
+- [x] T016 [P] `crawler/utils/scraper.py`에 429 Too Many Requests 대응을 위한 동적 적응형 지연 로직 추가
+- [x] T017 `README.md` 및 `specs/001-crawl-django-docs/quickstart.md`에 실행 방법 및 주요 장애(네트워크 타임아웃, 인코딩 오류, 추출 실패 시 폴백) 대응 가이드 업데이트
+- [x] T018 전체 수집 프로세스 실행 및 `data_sources/` 결과물의 UTF-8 인코딩 및 마크다운 구조 최종 검수 (최소 10개 이상의 무작위 샘플링 검수 포함)
 
 ---
 

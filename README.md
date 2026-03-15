@@ -55,7 +55,7 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 docker-compose up -d
 
 # 2. 문서 수집 (로컬 data_sources에 마운트)
-python crawler/main.py
+uv run --project crawler python crawler/orm_cookbook.py
 
 # 3. 데이터 적재 및 임베딩 (Django Command)
 python django_server/manage.py ingest_docs
@@ -63,3 +63,8 @@ python django_server/manage.py ingest_docs
 # 4. MCP 서버 실행 (AI 에이전트 연결용)
 mcp dev mcp_server/main.py
 ```
+
+### 🚨 트러블슈팅 (Troubleshooting)
+- **네트워크 타임아웃 & 429 Too Many Requests:** 크롤러는 `tenacity`를 활용해 자동으로 지수 백오프 기반 재시도를 수행합니다. 오류 발생 시 강제로 중단하지 말고 대기하세요.
+- **인코딩 오류:** 크롤링된 결과물은 자동으로 `UTF-8`로 변환되어 저장됩니다. Windows 환경 등에서 파일 읽기/쓰기 시 인코딩 문제가 발생하면 Python 실행 환경이 `UTF-8`을 기본으로 사용하는지 확인하세요.
+- **추출 실패 시 폴백:** 본문 추출 시 `readability-lxml`이 실패할 경우, 내부적으로 `BeautifulSoup`을 사용하여 주요 CSS 컨테이너(`.section`, `main` 등)를 탐색하도록 폴백(Fallback) 처리되어 있습니다. 빈 내용이 저장될 경우 `converter.py`의 폴백 셀렉터를 추가할 수 있습니다.
