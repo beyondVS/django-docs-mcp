@@ -3,4 +3,15 @@ name = "crawler"
 version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    "beautifulsoup4~=4.14.3",
+    "httpx~=0.28.1",
+    "lxml~=6.0.2",
+    "markdownify~=1.2.2",
+    "pyyaml~=6.0.3",
+    "readability-lxml~=0.8.4.1",
+    "tenacity~=9.1.4",
+]
+
+[dependency-groups]
+dev = []

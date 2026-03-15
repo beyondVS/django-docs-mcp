@@ -15,6 +15,8 @@
 
 ## 3. 소스별 전략
 
-* **Phase 1 (Django Cookbook):** HTML/마크다운 헤더 추출. 청크 상단에 챕터 제목(Title)을 강제 주입하여 문맥 보강.
+* **Phase 1 (Django Cookbook):** `data_sources/` 하위의 마크다운 파일들을 소스로 사용합니다.
+  - **메타데이터 활용**: YAML Front Matter의 `target_version`, `source_url`을 추출하여 각 청크의 메타데이터로 저장합니다.
+  - **문맥 보강**: 청크 상단에 챕터 제목(Title)과 원본 URL을 주입하여 검색 시 문맥 이해도를 높입니다.
 * **Phase 2 (공식 문서):** reStructuredText 파일 내 `.. section::` 및 언더라인 기준 분할.
-* **[전략 포인트]** 문서 내부의 `.. versionadded:: 4.2` 등 지시어를 정규식으로 추출하여, DB의 `target_version` 컬럼에 매핑하면 버전별 검색의 정확도를 극대화할 수 있습니다. (구현 시 정규식 파싱 검증 필요)
+* **[전략 포인트]** 문서 내부의 `.. versionadded:: 4.2` 등 지시어와 수집 시 태깅된 `target_version`을 조합하여, DB의 `target_version` 컬럼에 매핑하면 버전별 검색의 정확도를 극대화할 수 있습니다. (구현 시 정규식 파싱 검증 필요)
