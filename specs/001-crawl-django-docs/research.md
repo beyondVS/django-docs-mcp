@@ -1,4 +1,4 @@
-# 기술 조사 보고서 (Research Report): Django Cookbook Crawler
+# 기술 조사 보고서 (Research Report): Django ORM Cookbook Crawler
 
 **기능**: Django 관련 문서 RAG 데이터 소스 크롤링 (`001-crawl-django-docs`)
 **날짜**: 2026-03-15

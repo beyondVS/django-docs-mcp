@@ -4,7 +4,7 @@
 **입력**: `/specs/001-crawl-django-docs/spec.md`의 기능 명세서
 
 ## 요약
-Django ORM/Admin Cookbook 문서를 RAG(검색 증강 생성)에 적합한 마크다운 형식으로 자동 수집하는 크롤러를 구축합니다. `httpx` 비동기 엔진과 `readability-lxml`을 사용하여 본문을 추출하고, `markdownify`를 통해 코드 블록이 보존된 마크다운을 생성합니다. 수집된 데이터는 `data_sources/` 하위에 URL 구조를 반영하여 계층적으로 저장됩니다.
+Django ORM Cookbook 문서를 RAG(검색 증강 생성)에 적합한 마크다운 형식으로 자동 수집하는 크롤러를 구축합니다. `httpx` 비동기 엔진과 `readability-lxml`을 사용하여 본문을 추출하고, `markdownify`를 통해 코드 블록이 보존된 마크다운을 생성합니다. 수집된 데이터는 `data_sources/` 하위에 URL 구조를 반영하여 계층적으로 저장됩니다.
 
 ## 기술적 문맥 (Technical Context)
 
@@ -50,15 +50,13 @@ crawler/
 │   ├── scraper.py       # httpx 및 재시도 로직 공통 유틸리티
 │   ├── converter.py     # readability 및 markdownify 변환 로직
 │   └── storage.py       # 경로 관리 및 파일 저장 로직
-├── orm_cookbook.py      # ORM Cookbook 시작 스크립트
-└── admin_cookbook.py    # Admin Cookbook 시작 스크립트
+└── orm_cookbook.py      # ORM Cookbook 시작 스크립트
 
 data_sources/
-├── django2-orm-cookbook/
-└── django2-admin-cookbook/
+└── django2-orm-cookbook/
 ```
 
-**구조 결정**: 프로젝트 폴더 구조 방침에 따라 `crawler/` 폴더를 신설하고, 각 대상별 시작 스크립트와 공통 유틸리티를 분리하여 모듈화된 구조를 채택함.
+**구조 결정**: 프로젝트 폴더 구조 방침에 따라 `crawler/` 폴더를 신설하고, 대상 시작 스크립트와 공통 유틸리티를 분리하여 모듈화된 구조를 채택함.
 
 ## 복잡성 추적
 

@@ -21,15 +21,9 @@ uv add httpx readability-lxml markdownify tenacity PyYAML beautifulsoup4 lxml
 python crawler/orm_cookbook.py
 ```
 
-### Django Admin Cookbook 수집
-```bash
-python crawler/admin_cookbook.py
-```
-
 ## 3. 결과 확인
 수집된 파일은 다음 경로에서 확인할 수 있습니다:
 - `data_sources/django2-orm-cookbook/`
-- `data_sources/django2-admin-cookbook/`
 
 각 마크다운 파일의 상단에 다음과 같은 메타데이터가 포함되어 있는지 확인하십시오:
 ```yaml

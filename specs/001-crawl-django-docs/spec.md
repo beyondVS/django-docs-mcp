@@ -3,7 +3,7 @@
 **기능 브랜치**: `001-crawl-django-docs`
 **생성일**: 2026-03-15
 **상태**: 초안(Draft)
-**입력**: 사용자 설명: "Django 관련 문서의 RAG를 구축하기 위한 데이터 소스 크롤링 작업 Django ORM Cookbook: https://books.agiliq.com/projects/django-orm-cookbook/en/latest/ Django Admin Cookbook: https://books.agiliq.com/projects/django-admin-cookbook/en/latest/ 저장경로(예상): Django ORM Cookbook: ./data_sources/django-orm-cookbook Django Admin Cookbook: ./data_sources/django-admin-cookbook 1. 저장 되는 폴더의 이름은 프로젝트 성격에 맞춰 적절히 추천 하라. 2. 해당 문서는 django 2.x 를 시절에 나온 문서이다. 3. 적절한 크롤링 및 마크다운 변환 및 저장 전략을 찾을 것."
+**입력**: 사용자 설명: "Django 관련 문서의 RAG를 구축하기 위한 데이터 소스 크롤링 작업 Django ORM Cookbook: https://books.agiliq.com/projects/django-orm-cookbook/en/latest/ 저장경로(예상): Django ORM Cookbook: ./data_sources/django-orm-cookbook 1. 저장 되는 폴더의 이름은 프로젝트 성격에 맞춰 적절히 추천 하라. 2. 해당 문서는 django 2.x 를 시절에 나온 문서이다. 3. 적절한 크롤링 및 마크다운 변환 및 저장 전략을 찾을 것."
 
 ## Clarifications
 
@@ -21,17 +21,17 @@
 
 ## 사용자 시나리오 및 테스트 *(필수)*
 
-### 사용자 스토리 1 - Django Cookbook 문서의 자동 크롤링 및 로컬 저장 (우선순위: P1)
+### 사용자 스토리 1 - Django ORM Cookbook 문서의 자동 크롤링 및 로컬 저장 (우선순위: P1)
 
-사용자는 지정된 Django Cookbook URL에서 모든 챕터의 내용을 자동으로 수집하여 로컬에 저장하고자 합니다.
+사용자는 지정된 Django ORM Cookbook URL에서 모든 챕터의 내용을 자동으로 수집하여 로컬에 저장하고자 합니다.
 
 **우선순위 이유**: RAG 시스템 구축을 위한 가장 기초적인 단계로, 데이터가 수집되어야 이후 임베딩 및 검색이 가능합니다.
 
-**독립적 테스트**: `data_sources/` 디렉토리에 각 Cookbook별로 구조화된 문서 파일들이 생성되는지 확인함으로써 테스트할 수 있습니다.
+**독립적 테스트**: `data_sources/` 디렉토리에 Cookbook별로 구조화된 문서 파일들이 생성되는지 확인함으로써 테스트할 수 있습니다.
 
 **수락 시나리오(Acceptance Scenarios)**:
 
-1. **Given** Django ORM/Admin Cookbook URL이 제공되었을 때, **When** 크롤러를 실행하면, **Then** 정적 HTML 파싱 및 내부 도메인 한정 탐색을 통해 모든 챕터 내용이 누락 없이 수집되어야 함.
+1. **Given** Django ORM Cookbook URL이 제공되었을 때, **When** 크롤러를 실행하면, **Then** 정적 HTML 파싱 및 내부 도메인 한정 탐색을 통해 모든 챕터 내용이 누락 없이 수집되어야 함.
 2. **Given** 수집된 HTML 데이터가 있을 때, **When** 저장 프로세스가 진행되면, **Then** 웹사이트의 계층 구조를 반영한 디렉토리에 파일이 생성되어야 함.
 
 ---
@@ -75,11 +75,10 @@
 
 ### 기능적 요구 사항 (Functional Requirements)
 
-- **FR-001**: 시스템은 Django ORM Cookbook 및 Admin Cookbook의 시작 URL로부터 내부 도메인 내 링크만 재귀적으로 탐색하여 수집해야 함.
+- **FR-001**: 시스템은 Django ORM Cookbook의 시작 URL로부터 내부 도메인 내 링크만 재귀적으로 탐색하여 수집해야 함.
 - **FR-002**: 수집된 HTML은 Readability 알고리즘을 사용하여 본문 영역을 자동으로 감지하고, 내비게이션 등 불필요한 요소를 제외한 후 마크다운으로 변환해야 함.
 - **FR-003**: [합리적 기본값] 저장 경로는 프로젝트의 명확성을 위해 다음과 같이 구조화하며, 원본 URL 구조에 따른 계층적 디렉토리를 생성함:
   - `data_sources/django2-orm-cookbook/`
-  - `data_sources/django2-admin-cookbook/`
 - **FR-004**: 모든 변환된 마크다운 파일 상단에는 YAML Front Matter 형식으로 `target_version: 2.x`, `source_url`, 그리고 수집 시점(`collected_at`) 메타데이터를 포함해야 함.
 - **FR-005**: 크롤링 시 정적 HTML 파싱 방식을 사용하며, JavaScript 실행은 배제함.
 - **FR-006**: 시스템은 최대 3~5개의 동시 요청을 수행하되, Rate Limit 오류 발생 시 적응형 대기 전략을 적용함.
@@ -101,7 +100,7 @@
 
 ### 측정 가능한 결과 (Measurable Outcomes)
 
-- **SC-001**: 지정된 두 Cookbook의 모든 챕터(약 100% 수집율)가 로컬 마크다운 파일로 변환되어 저장됨.
+- **SC-001**: 지정된 Django ORM Cookbook의 모든 챕터(약 100% 수집율)가 로컬 마크다운 파일로 변환되어 저장됨.
 - **SC-002**: 변환된 마크다운 파일의 95% 이상이 깨진 링크나 손상된 코드 블록 없이 원본의 내용을 충실히 반영함.
 - **SC-003**: 모든 수집된 문서 상단에 `target_version: 2.x` 메타데이터가 정확히 태깅되어 검색 필터링이 가능함.
 - **SC-004**: 수집 및 변환 프로세스가 자동화되어, 단일 명령 실행으로 전체 워크플로우가 완료됨.

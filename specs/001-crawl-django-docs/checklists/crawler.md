@@ -18,7 +18,7 @@
 
 ## 요구사항 일관성 (Consistency)
 
-- [ ] CHK007 - `orm_cookbook.py`와 `admin_cookbook.py` 간의 공통 유틸리티 사용 및 데이터 저장 구조 요구사항이 일치합니까? [일관성, Plan §Project Structure]
+- [ ] CHK007 - `orm_cookbook.py`가 공통 유틸리티(`utils/`)를 사용하여 설계된 데이터 저장 구조를 엄격히 따르고 있습니까? [일관성, Plan §Project Structure]
 - [ ] CHK008 - YAML Front Matter의 필드명이 데이터 모델과 명세서 간에 충돌 없이 정렬되었습니까? [일관성, Spec vs Data Model]
 
 ## 수락 기준 품질 (Success Criteria)

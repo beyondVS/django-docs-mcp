@@ -50,16 +50,15 @@
 
 ---
 
-## 4단계: 사용자 스토리 3 - 메타데이터 관리 및 Admin Cookbook 확장 (우선순위: P2)
+## 4단계: 사용자 스토리 3 - 메타데이터 관리 및 다듬기 (우선순위: P2)
 
-**목표**: 수집된 문서에 Django 버전 및 출처 URL 메타데이터를 부여하고 Admin Cookbook 수집 추가
+**목표**: 수집된 문서에 Django 버전 및 출처 URL 메타데이터를 부여하고 안정성 강화
 
-**독립적 테스트**: 생성된 마크다운 파일 상단에 YAML Front Matter가 포함되어 있는지 확인하고, `admin_cookbook.py` 실행 결과 검증
+**독립적 테스트**: 생성된 마크다운 파일 상단에 YAML Front Matter가 포함되어 있는지 확인
 
 ### 사용자 스토리 3 구현
 
 - [ ] T014 [US3] `crawler/utils/converter.py`에 YAML Front Matter 생성 로직 추가 (`source_url`, `target_version: 2.x`, `collected_at`)
-- [ ] T015 [US3] `crawler/admin_cookbook.py` 구현 (ORM Cookbook과 동일한 로직을 적용하되 대상 URL 및 저장 경로만 변경)
 - [ ] T016 [US3] `crawler/tests/test_metadata.py`를 작성하여 모든 저장된 파일에 필수 메타데이터가 포함되어 있는지 검증
 
 ---
@@ -78,12 +77,12 @@
 
 ### 단계별 의존성
 1. **설정 (1단계)** → **기초 작업 (2단계)** → **US1&2 (3단계)** → **US3 (4단계)** → **다듬기 (5단계)** 순으로 진행합니다.
-2. 각 Cookbook 스크립트(`orm_cookbook.py`, `admin_cookbook.py`)는 `crawler/utils/` 하위의 유틸리티들에 의존합니다.
+2. Cookbook 스크립트(`orm_cookbook.py`)는 `crawler/utils/` 하위의 유틸리티들에 의존합니다.
 
 ### 병렬 작업 기회
 - T001~T003 (설정 작업)은 병렬로 진행 가능합니다.
 - T004~T007 (기초 유틸리티)은 구조가 설계되어 있다면 병렬로 개발 가능합니다.
-- T010~T013 (ORM)과 T015 (Admin)는 동일한 패턴이므로 기반 로직이 완성되면 병렬로 확장 가능합니다.
+- T010~T013 (ORM)은 모듈화된 기반 위에서 순차 또는 병렬로 개발 가능합니다.
 
 ---
 
@@ -96,4 +95,4 @@
 1. 공통 유틸리티(`utils/`)를 먼저 완성하여 코드 중복을 최소화합니다.
 2. ORM Cookbook을 통해 파이프라인을 검증합니다.
 3. 메타데이터 로직을 추가하여 데이터 정형성을 높입니다.
-4. Admin Cookbook으로 대상을 확장합니다.
+4. 최종 검수 및 안정화 작업을 수행합니다.

@@ -13,11 +13,6 @@
 - **주요 파라미터**: (내부 정의) `START_URL`, `STORAGE_DIR`
 - **출력**: `data_sources/django2-orm-cookbook/` 하위에 계층적 마크다운 파일 생성
 
-### Django Admin Cookbook 수집
-- **실행 명령**: `python crawler/admin_cookbook.py`
-- **주요 파라미터**: (내부 정의) `START_URL`, `STORAGE_DIR`
-- **출력**: `data_sources/django2-admin-cookbook/` 하위에 계층적 마크다운 파일 생성
-
 ## 3. 공통 유틸리티 규약 (`crawler/utils/`)
 
 ### Scraper (`scraper.py`)
