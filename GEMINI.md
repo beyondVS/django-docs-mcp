@@ -1,4 +1,4 @@
-# Gemini CLI Project Context
+﻿# Gemini CLI Project Context
 
 이 파일은 `gemini-cli`가 작업을 시작하기 위한 초기 진입점(Entry Point)입니다.
 
