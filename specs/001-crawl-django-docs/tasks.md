@@ -1,4 +1,4 @@
-# 작업 목록: 001-crawl-django-docs (Django Cookbook Crawler)
+# 작업 목록: 001-crawl-django-docs (Django ORM Cookbook Crawler)
 
 **입력**: `/specs/001-crawl-django-docs/`의 설계 문서
 **선행 조건**: `plan.md` (필수), `spec.md` (필수), `research.md`, `data-model.md`, `contracts/crawler-cli-contract.md`
@@ -59,7 +59,7 @@
 ### 사용자 스토리 3 구현
 
 - [ ] T014 [US3] `crawler/utils/converter.py`에 YAML Front Matter 생성 로직 추가 (`source_url`, `target_version: 2.x`, `collected_at`)
-- [ ] T016 [US3] `crawler/tests/test_metadata.py`를 작성하여 모든 저장된 파일에 필수 메타데이터가 포함되어 있는지 검증
+- [ ] T015 [US3] `crawler/tests/test_metadata.py`를 작성하여 모든 저장된 파일에 필수 메타데이터가 포함되어 있는지 검증
 
 ---
 
@@ -67,9 +67,9 @@
 
 **목적**: 안정성 강화 및 문서화
 
-- [ ] T017 [P] `crawler/utils/scraper.py`에 429 Too Many Requests 대응을 위한 동적 적응형 지연 로직 추가
-- [ ] T018 `README.md` 및 `specs/001-crawl-django-docs/quickstart.md`에 실행 방법 및 문제 해결 가이드 업데이트
-- [ ] T019 전체 수집 프로세스 실행 및 `data_sources/` 결과물의 UTF-8 인코딩 및 마크다운 구조 최종 검수
+- [ ] T016 [P] `crawler/utils/scraper.py`에 429 Too Many Requests 대응을 위한 동적 적응형 지연 로직 추가
+- [ ] T017 `README.md` 및 `specs/001-crawl-django-docs/quickstart.md`에 실행 방법 및 주요 장애(네트워크 타임아웃, 인코딩 오류, 추출 실패 시 폴백) 대응 가이드 업데이트
+- [ ] T018 전체 수집 프로세스 실행 및 `data_sources/` 결과물의 UTF-8 인코딩 및 마크다운 구조 최종 검수 (최소 10개 이상의 무작위 샘플링 검수 포함)
 
 ---
 
