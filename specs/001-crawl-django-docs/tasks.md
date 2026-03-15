@@ -22,7 +22,7 @@
 **목적**: 크롤링 및 변환 파이프라인을 위한 핵심 유틸리티 구현
 
 - [ ] T004 `crawler/utils/scraper.py`에 `httpx` 및 `tenacity`를 활용한 지수 백오프 기반 비동기 크롤러 유틸리티 구현
-- [ ] T005 `crawler/utils/converter.py`에 `readability-lxml` 및 `markdownify`를 사용한 HTML-마크다운 변환 로직 구현
+- [ ] T005 `crawler/utils/converter.py`에 `readability-lxml` 본문 추출 및 실패 시 CSS 셀렉터 기반 폴백 로직(BeautifulSoup)을 포함한 변환 파이프라인 구현
 - [ ] T006 `crawler/utils/storage.py`에 URL 계층 구조를 반영한 파일 저장 및 경로 관리 로직 구현
 - [ ] T007 `crawler/utils/logger.py`에 크롤링 상태 및 에러 로깅을 위한 공통 로거 설정
 
@@ -38,15 +38,13 @@
 
 ### 사용자 스토리 1 & 2 테스트 (선택 사항)
 
-### 사용자 스토리 1 & 2 테스트 (선택 사항)
-
 - [ ] T008 [P] [US1] `crawler/tests/test_scraper.py`에 `httpx` 모킹을 통한 비동기 요청 및 재시도 로직 단위 테스트 작성
 - [ ] T009 [P] [US2] `crawler/tests/test_converter.py`에 샘플 HTML을 활용한 마크다운 변환 및 코드 블록 보존 테스트 작성
 
 ### 사용자 스토리 1 & 2 구현
 
 - [ ] T010 [US1] `crawler/orm_cookbook.py`에 ORM Cookbook 시작 URL 및 탐색 범위 정의 (내부 도메인 한정)
-- [ ] T011 [US1] `crawler/orm_cookbook.py`에 재귀적 링크 탐색 및 방문 관리(중복 제거) 로직 구현
+- [ ] T011 [US1] `crawler/orm_cookbook.py`에 재귀적 링크 탐색 및 URL + 콘텐츠 해시(SHA256) 기반 중복 제거 로직 구현
 - [ ] T012 [US2] `crawler/orm_cookbook.py`에 수집된 HTML을 `converter.py`를 통해 마크다운으로 변환하는 파이프라인 통합
 - [ ] T013 [US1] `crawler/orm_cookbook.py`에 변환된 내용을 `storage.py`를 통해 `data_sources/django2-orm-cookbook/`에 저장하는 로직 연동
 

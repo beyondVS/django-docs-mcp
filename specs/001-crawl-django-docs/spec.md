@@ -80,7 +80,7 @@
 - **FR-003**: [합리적 기본값] 저장 경로는 프로젝트의 명확성을 위해 다음과 같이 구조화하며, 원본 URL 구조에 따른 계층적 디렉토리를 생성함:
   - `data_sources/django2-orm-cookbook/`
   - `data_sources/django2-admin-cookbook/`
-- **FR-004**: 모든 변환된 마크다운 파일 상단에는 YAML Front Matter 형식으로 `target_version: 2.x` 및 `source_url` 메타데이터를 포함해야 함.
+- **FR-004**: 모든 변환된 마크다운 파일 상단에는 YAML Front Matter 형식으로 `target_version: 2.x`, `source_url`, 그리고 수집 시점(`collected_at`) 메타데이터를 포함해야 함.
 - **FR-005**: 크롤링 시 정적 HTML 파싱 방식을 사용하며, JavaScript 실행은 배제함.
 - **FR-006**: 시스템은 최대 3~5개의 동시 요청을 수행하되, Rate Limit 오류 발생 시 적응형 대기 전략을 적용함.
 - **FR-007**: 마크다운 변환 시 이미지는 다운로드하지 않고 원본 URL 링크(`![alt](url)`)만 유지해야 함.

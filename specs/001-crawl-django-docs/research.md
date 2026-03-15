@@ -10,9 +10,9 @@
 - **근거**: `httpx`는 비동기 요청을 기본 지원하며, `tenacity`는 429(Too Many Requests) 및 네트워크 타임아웃 발생 시 지수 백오프(Exponential Backoff)와 지터(Jitter)를 적용한 정교한 재시도 로직을 선언적으로 구현할 수 있게 함.
 - **대안**: `aiohttp` (세션 관리의 복잡성), `requests` (동기 방식으로 성능 저하).
 
-### 결정 2: 본문 추출 알고리즘 (`readability-lxml`)
-- **선택**: `readability.Document` 활용.
-- **근거**: Mozilla의 Readability 알고리즘은 휴리스틱 기반으로 광고, 내비게이션, 푸터를 제외하고 본문(`article`, `main` 등)을 정확하게 감지하여 추출하는 데 최적화됨.
+### 결정 2: 본문 추출 알고리즘 (`readability-lxml` + `BeautifulSoup` 폴백)
+- **선택**: `readability.Document` 활용 및 실패 시 `beautifulsoup4` 활용.
+- **근거**: Mozilla의 Readability 알고리즘은 휴리스틱 기반으로 본문(`article`, `main` 등)을 정확하게 감지하는 데 최적화됨. 다만 비표준 HTML 구조로 인해 추출이 실패할 경우를 대비하여 `BeautifulSoup`을 사용해 `.section`, `#content` 등의 CSS 셀렉터로 직접 타겟팅하는 폴백(Fallback) 전략을 추가함.
 - **Python 3.14 이슈**: `lxml` 빌드 의존성 문제가 있을 수 있으므로 Docker 컨테이너 빌드 시 `libxml2`, `libxslt` 개발 헤더를 포함하거나 정적 빌드 옵션을 권장함.
 
 ### 결정 3: HTML to Markdown 변환 (`markdownify`)
