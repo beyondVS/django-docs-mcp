@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# common.sh와 유사한 공통 PowerShell 함수들
+# Common PowerShell functions analogous to common.sh
 
 function Get-RepoRoot {
     try {
@@ -8,30 +8,30 @@ function Get-RepoRoot {
             return $result
         }
     } catch {
-        # Git 명령어 실패
+        # Git command failed
     }
 
-    # Git 저장소가 아닌 경우 스크립트 위치를 기준으로 찾습니다.
+    # Fall back to script location for non-git repos
     return (Resolve-Path (Join-Path $PSScriptRoot "../../..")).Path
 }
 
 function Get-CurrentBranch {
-    # 먼저 SPECIFY_FEATURE 환경 변수가 설정되어 있는지 확인합니다.
+    # First check if SPECIFY_FEATURE environment variable is set
     if ($env:SPECIFY_FEATURE) {
         return $env:SPECIFY_FEATURE
     }
 
-    # Git을 사용할 수 있는지 확인합니다.
+    # Then check git if available
     try {
         $result = git rev-parse --abbrev-ref HEAD 2>$null
         if ($LASTEXITCODE -eq 0) {
             return $result
         }
     } catch {
-        # Git 명령어 실패
+        # Git command failed
     }
 
-    # Git 저장소가 아닌 경우, 가장 최신의 기능(feature) 디렉토리를 찾습니다.
+    # For non-git repos, try to find the latest feature directory
     $repoRoot = Get-RepoRoot
     $specsDir = Join-Path $repoRoot "specs"
 
@@ -54,7 +54,7 @@ function Get-CurrentBranch {
         }
     }
 
-    # 최종 기본값
+    # Final fallback
     return "main"
 }
 
@@ -73,15 +73,15 @@ function Test-FeatureBranch {
         [bool]$HasGit = $true
     )
 
-    # Git 저장소가 아닌 경우 브랜치 이름을 강제할 수 없으므로 경고만 출력합니다.
+    # For non-git repos, we can't enforce branch naming but still provide output
     if (-not $HasGit) {
-        Write-Warning "[specify] 경고: Git 저장소를 감지하지 못했습니다. 브랜치 검증을 건너뜁니다."
+        Write-Warning "[specify] Warning: Git repository not detected; skipped branch validation"
         return $true
     }
 
     if ($Branch -notmatch '^[0-9]{3}-') {
-        Write-Output "에러: 기능 브랜치가 아닙니다. 현재 브랜치: $Branch"
-        Write-Output "기능 브랜치 이름은 다음과 같아야 합니다: 001-기능-이름"
+        Write-Output "ERROR: Not on a feature branch. Current branch: $Branch"
+        Write-Output "Feature branches should be named like: 001-feature-name"
         return $false
     }
     return $true
@@ -133,4 +133,71 @@ function Test-DirHasFiles {
         Write-Output "  ✗ $Description"
         return $false
     }
+}
+
+# Resolve a template name to a file path using the priority stack:
+#   1. .specify/templates/overrides/
+#   2. .specify/presets/<preset-id>/templates/ (sorted by priority from .registry)
+#   3. .specify/extensions/<ext-id>/templates/
+#   4. .specify/templates/ (core)
+function Resolve-Template {
+    param(
+        [Parameter(Mandatory=$true)][string]$TemplateName,
+        [Parameter(Mandatory=$true)][string]$RepoRoot
+    )
+
+    $base = Join-Path $RepoRoot '.specify/templates'
+
+    # Priority 1: Project overrides
+    $override = Join-Path $base "overrides/$TemplateName.md"
+    if (Test-Path $override) { return $override }
+
+    # Priority 2: Installed presets (sorted by priority from .registry)
+    $presetsDir = Join-Path $RepoRoot '.specify/presets'
+    if (Test-Path $presetsDir) {
+        $registryFile = Join-Path $presetsDir '.registry'
+        $sortedPresets = @()
+        if (Test-Path $registryFile) {
+            try {
+                $registryData = Get-Content $registryFile -Raw | ConvertFrom-Json
+                $presets = $registryData.presets
+                if ($presets) {
+                    $sortedPresets = $presets.PSObject.Properties |
+                        Sort-Object { if ($null -ne $_.Value.priority) { $_.Value.priority } else { 10 } } |
+                        ForEach-Object { $_.Name }
+                }
+            } catch {
+                # Fallback: alphabetical directory order
+                $sortedPresets = @()
+            }
+        }
+
+        if ($sortedPresets.Count -gt 0) {
+            foreach ($presetId in $sortedPresets) {
+                $candidate = Join-Path $presetsDir "$presetId/templates/$TemplateName.md"
+                if (Test-Path $candidate) { return $candidate }
+            }
+        } else {
+            # Fallback: alphabetical directory order
+            foreach ($preset in Get-ChildItem -Path $presetsDir -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '.*' }) {
+                $candidate = Join-Path $preset.FullName "templates/$TemplateName.md"
+                if (Test-Path $candidate) { return $candidate }
+            }
+        }
+    }
+
+    # Priority 3: Extension-provided templates
+    $extDir = Join-Path $RepoRoot '.specify/extensions'
+    if (Test-Path $extDir) {
+        foreach ($ext in Get-ChildItem -Path $extDir -Directory -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '.*' } | Sort-Object Name) {
+            $candidate = Join-Path $ext.FullName "templates/$TemplateName.md"
+            if (Test-Path $candidate) { return $candidate }
+        }
+    }
+
+    # Priority 4: Core templates
+    $core = Join-Path $base "$TemplateName.md"
+    if (Test-Path $core) { return $core }
+
+    return $null
 }

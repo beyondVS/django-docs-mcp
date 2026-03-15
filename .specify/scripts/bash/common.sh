@@ -1,32 +1,32 @@
 #!/usr/bin/env bash
-# 모든 스크립트에서 공통으로 사용하는 함수 및 변수
+# Common functions and variables for all scripts
 
-# 저장소 루트 디렉토리를 가져옵니다. (Git이 없는 경우 대비)
+# Get repository root, with fallback for non-git repositories
 get_repo_root() {
     if git rev-parse --show-toplevel >/dev/null 2>&1; then
         git rev-parse --show-toplevel
     else
-        # Git 저장소가 아닌 경우 스크립트 위치를 기준으로 찾습니다.
+        # Fall back to script location for non-git repos
         local script_dir="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
         (cd "$script_dir/../../.." && pwd)
     fi
 }
 
-# 현재 브랜치를 가져옵니다. (Git이 없는 경우 대비)
+# Get current branch, with fallback for non-git repositories
 get_current_branch() {
-    # 먼저 SPECIFY_FEATURE 환경 변수가 설정되어 있는지 확인합니다.
+    # First check if SPECIFY_FEATURE environment variable is set
     if [[ -n "${SPECIFY_FEATURE:-}" ]]; then
         echo "$SPECIFY_FEATURE"
         return
     fi
 
-    # Git을 사용할 수 있는지 확인합니다.
+    # Then check git if available
     if git rev-parse --abbrev-ref HEAD >/dev/null 2>&1; then
         git rev-parse --abbrev-ref HEAD
         return
     fi
 
-    # Git 저장소가 아닌 경우, 가장 최신의 기능(feature) 디렉토리를 찾습니다.
+    # For non-git repos, try to find the latest feature directory
     local repo_root=$(get_repo_root)
     local specs_dir="$repo_root/specs"
 
@@ -54,28 +54,27 @@ get_current_branch() {
         fi
     fi
 
-    echo "main"  # 최종 기본값
+    echo "main"  # Final fallback
 }
 
-# Git 사용 가능 여부를 확인합니다.
+# Check if we have git available
 has_git() {
     git rev-parse --show-toplevel >/dev/null 2>&1
 }
 
-# 기능 브랜치 명명 규칙을 확인합니다.
 check_feature_branch() {
     local branch="$1"
     local has_git_repo="$2"
 
-    # Git 저장소가 아닌 경우 브랜치 이름을 강제할 수 없으므로 경고만 출력합니다.
+    # For non-git repos, we can't enforce branch naming but still provide output
     if [[ "$has_git_repo" != "true" ]]; then
-        echo "[specify] 경고: Git 저장소를 감지하지 못했습니다. 브랜치 검증을 건너뜁니다." >&2
+        echo "[specify] Warning: Git repository not detected; skipped branch validation" >&2
         return 0
     fi
 
     if [[ ! "$branch" =~ ^[0-9]{3}- ]]; then
-        echo "에러: 기능 브랜치가 아닙니다. 현재 브랜치: $branch" >&2
-        echo "기능 브랜치 이름은 다음과 같아야 합니다: 001-기능-이름" >&2
+        echo "ERROR: Not on a feature branch. Current branch: $branch" >&2
+        echo "Feature branches should be named like: 001-feature-name" >&2
         return 1
     fi
 
@@ -84,23 +83,23 @@ check_feature_branch() {
 
 get_feature_dir() { echo "$1/specs/$2"; }
 
-# 정확한 브랜치 일치 대신 숫자 접두사로 기능 디렉토리를 찾습니다.
-# 이를 통해 여러 브랜치에서 동일한 명세(spec)로 작업할 수 있습니다. (예: 004-버그-수정, 004-기능-추가)
+# Find feature directory by numeric prefix instead of exact branch match
+# This allows multiple branches to work on the same spec (e.g., 004-fix-bug, 004-add-feature)
 find_feature_dir_by_prefix() {
     local repo_root="$1"
     local branch_name="$2"
     local specs_dir="$repo_root/specs"
 
-    # 브랜치에서 숫자 접두사를 추출합니다. (예: "004-무언가"에서 "004")
+    # Extract numeric prefix from branch (e.g., "004" from "004-whatever")
     if [[ ! "$branch_name" =~ ^([0-9]{3})- ]]; then
-        # 브랜치에 숫자 접두사가 없는 경우 정확한 일치로 돌아갑니다.
+        # If branch doesn't have numeric prefix, fall back to exact match
         echo "$specs_dir/$branch_name"
         return
     fi
 
     local prefix="${BASH_REMATCH[1]}"
 
-    # specs/ 디렉토리에서 이 접두사로 시작하는 디렉토리를 찾습니다.
+    # Search for directories in specs/ that start with this prefix
     local matches=()
     if [[ -d "$specs_dir" ]]; then
         for dir in "$specs_dir"/"$prefix"-*; do
@@ -110,22 +109,21 @@ find_feature_dir_by_prefix() {
         done
     fi
 
-    # 결과 처리
+    # Handle results
     if [[ ${#matches[@]} -eq 0 ]]; then
-        # 일치하는 항목 없음 - 브랜치 이름 경로를 반환합니다. (나중에 명확한 에러와 함께 실패할 것입니다.)
+        # No match found - return the branch name path (will fail later with clear error)
         echo "$specs_dir/$branch_name"
     elif [[ ${#matches[@]} -eq 1 ]]; then
-        # 정확히 하나의 일치 항목 발견 - 완벽합니다!
+        # Exactly one match - perfect!
         echo "$specs_dir/${matches[0]}"
     else
-        # 여러 개의 일치 항목 발견 - 명명 규칙을 잘 따랐다면 발생하지 않아야 합니다.
-        echo "에러: 접두사 '$prefix'로 시작하는 명세 디렉토리가 여러 개 발견되었습니다: ${matches[*]}" >&2
-        echo "숫자 접두사당 하나의 명세 디렉토리만 존재해야 합니다." >&2
-        echo "$specs_dir/$branch_name"  # 스크립트 중단을 피하기 위해 무언가 반환합니다.
+        # Multiple matches - this shouldn't happen with proper naming convention
+        echo "ERROR: Multiple spec directories found with prefix '$prefix': ${matches[*]}" >&2
+        echo "Please ensure only one spec directory exists per numeric prefix." >&2
+        return 1
     fi
 }
 
-# 기능 관련 경로 정보를 가져옵니다.
 get_feature_paths() {
     local repo_root=$(get_repo_root)
     local current_branch=$(get_current_branch)
@@ -135,23 +133,120 @@ get_feature_paths() {
         has_git_repo="true"
     fi
 
-    # 한 명세에 대해 여러 브랜치를 지원하기 위해 접두사 기반 조회를 사용합니다.
-    local feature_dir=$(find_feature_dir_by_prefix "$repo_root" "$current_branch")
+    # Use prefix-based lookup to support multiple branches per spec
+    local feature_dir
+    if ! feature_dir=$(find_feature_dir_by_prefix "$repo_root" "$current_branch"); then
+        echo "ERROR: Failed to resolve feature directory" >&2
+        return 1
+    fi
 
-    cat <<EOF
-REPO_ROOT='$repo_root'
-CURRENT_BRANCH='$current_branch'
-HAS_GIT='$has_git_repo'
-FEATURE_DIR='$feature_dir'
-FEATURE_SPEC='$feature_dir/spec.md'
-IMPL_PLAN='$feature_dir/plan.md'
-TASKS='$feature_dir/tasks.md'
-RESEARCH='$feature_dir/research.md'
-DATA_MODEL='$feature_dir/data-model.md'
-QUICKSTART='$feature_dir/quickstart.md'
-CONTRACTS_DIR='$feature_dir/contracts'
-EOF
+    # Use printf '%q' to safely quote values, preventing shell injection
+    # via crafted branch names or paths containing special characters
+    printf 'REPO_ROOT=%q\n' "$repo_root"
+    printf 'CURRENT_BRANCH=%q\n' "$current_branch"
+    printf 'HAS_GIT=%q\n' "$has_git_repo"
+    printf 'FEATURE_DIR=%q\n' "$feature_dir"
+    printf 'FEATURE_SPEC=%q\n' "$feature_dir/spec.md"
+    printf 'IMPL_PLAN=%q\n' "$feature_dir/plan.md"
+    printf 'TASKS=%q\n' "$feature_dir/tasks.md"
+    printf 'RESEARCH=%q\n' "$feature_dir/research.md"
+    printf 'DATA_MODEL=%q\n' "$feature_dir/data-model.md"
+    printf 'QUICKSTART=%q\n' "$feature_dir/quickstart.md"
+    printf 'CONTRACTS_DIR=%q\n' "$feature_dir/contracts"
+}
+
+# Check if jq is available for safe JSON construction
+has_jq() {
+    command -v jq >/dev/null 2>&1
+}
+
+# Escape a string for safe embedding in a JSON value (fallback when jq is unavailable).
+# Handles backslash, double-quote, and control characters (newline, tab, carriage return).
+json_escape() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\t'/\\t}"
+    s="${s//$'\r'/\\r}"
+    printf '%s' "$s"
 }
 
 check_file() { [[ -f "$1" ]] && echo "  ✓ $2" || echo "  ✗ $2"; }
 check_dir() { [[ -d "$1" && -n $(ls -A "$1" 2>/dev/null) ]] && echo "  ✓ $2" || echo "  ✗ $2"; }
+
+# Resolve a template name to a file path using the priority stack:
+#   1. .specify/templates/overrides/
+#   2. .specify/presets/<preset-id>/templates/ (sorted by priority from .registry)
+#   3. .specify/extensions/<ext-id>/templates/
+#   4. .specify/templates/ (core)
+resolve_template() {
+    local template_name="$1"
+    local repo_root="$2"
+    local base="$repo_root/.specify/templates"
+
+    # Priority 1: Project overrides
+    local override="$base/overrides/${template_name}.md"
+    [ -f "$override" ] && echo "$override" && return 0
+
+    # Priority 2: Installed presets (sorted by priority from .registry)
+    local presets_dir="$repo_root/.specify/presets"
+    if [ -d "$presets_dir" ]; then
+        local registry_file="$presets_dir/.registry"
+        if [ -f "$registry_file" ] && command -v python3 >/dev/null 2>&1; then
+            # Read preset IDs sorted by priority (lower number = higher precedence)
+            local sorted_presets
+            sorted_presets=$(SPECKIT_REGISTRY="$registry_file" python3 -c "
+import json, sys, os
+try:
+    with open(os.environ['SPECKIT_REGISTRY']) as f:
+        data = json.load(f)
+    presets = data.get('presets', {})
+    for pid, meta in sorted(presets.items(), key=lambda x: x[1].get('priority', 10)):
+        print(pid)
+except Exception:
+    sys.exit(1)
+" 2>/dev/null)
+            if [ $? -eq 0 ] && [ -n "$sorted_presets" ]; then
+                while IFS= read -r preset_id; do
+                    local candidate="$presets_dir/$preset_id/templates/${template_name}.md"
+                    [ -f "$candidate" ] && echo "$candidate" && return 0
+                done <<< "$sorted_presets"
+            else
+                # python3 returned empty list — fall through to directory scan
+                for preset in "$presets_dir"/*/; do
+                    [ -d "$preset" ] || continue
+                    local candidate="$preset/templates/${template_name}.md"
+                    [ -f "$candidate" ] && echo "$candidate" && return 0
+                done
+            fi
+        else
+            # Fallback: alphabetical directory order (no python3 available)
+            for preset in "$presets_dir"/*/; do
+                [ -d "$preset" ] || continue
+                local candidate="$preset/templates/${template_name}.md"
+                [ -f "$candidate" ] && echo "$candidate" && return 0
+            done
+        fi
+    fi
+
+    # Priority 3: Extension-provided templates
+    local ext_dir="$repo_root/.specify/extensions"
+    if [ -d "$ext_dir" ]; then
+        for ext in "$ext_dir"/*/; do
+            [ -d "$ext" ] || continue
+            # Skip hidden directories (e.g. .backup, .cache)
+            case "$(basename "$ext")" in .*) continue;; esac
+            local candidate="$ext/templates/${template_name}.md"
+            [ -f "$candidate" ] && echo "$candidate" && return 0
+        done
+    fi
+
+    # Priority 4: Core templates
+    local core="$base/${template_name}.md"
+    [ -f "$core" ] && echo "$core" && return 0
+
+    # Return success with empty output so callers using set -e don't abort;
+    # callers check [ -n "$TEMPLATE" ] to detect "not found".
+    return 0
+}

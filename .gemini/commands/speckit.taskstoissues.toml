@@ -1,8 +1,8 @@
-description = "기존 작업을 설계 결과물을 바탕으로 실행 가능하고 의존성 순서가 정렬된 GitHub 이슈로 변환합니다."
+description = "사용 가능한 설계 아티팩트를 바탕으로 기존 작업을 실행 가능하고 의존성이 정렬된 GitHub 이슈로 변환합니다."
 
 prompt = """
 ---
-description: 기존 작업을 설계 결과물을 바탕으로 실행 가능하고 의존성 순서가 정렬된 GitHub 이슈로 변환합니다.
+description: 사용 가능한 설계 아티팩트를 바탕으로 기존 작업을 실행 가능하고 의존성이 정렬된 GitHub 이슈로 변환합니다.
 tools: ['github/github-mcp-server/issue_write']
 ---
 
@@ -12,27 +12,27 @@ tools: ['github/github-mcp-server/issue_write']
 $ARGUMENTS
 ```
 
-사용자 입력이 있는 경우, 진행하기 전에 이를 **반드시** 고려해야 합니다.
+진행하기 전에 사용자 입력이 비어 있지 않다면 반드시 고려해야 합니다.
 
-## 개요
+## 개요 (Outline)
 
-1. 저장소 루트에서 다음 명령어를 실행하여 `FEATURE_DIR` 및 `AVAILABLE_DOCS` 목록을 JSON으로 파싱합니다.
-   - **Windows (PowerShell):** `.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks`
-   - **Linux/macOS (Bash):** `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks`
+1. 현재 운영체제에 맞는 스크립트를 저장소 루트에서 실행하고 `FEATURE_DIR` 및 `AVAILABLE_DOCS` 목록을 파싱합니다:
+   - **Windows (win32)**: `.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks`
+   - **그 외 (Linux/macOS)**: `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks`
 
-2. 실행된 스크립트 결과에서 **tasks.md** 경로를 추출합니다.
-
-3. 다음 명령어를 실행하여 Git 원격 저장소 주소를 가져옵니다:
+   모든 경로는 절대 경로여야 합니다. 인자(args)에 "I'm Groot"와 같은 단일 인용구가 있는 경우 이스케이프 구문을 사용하십시오: 예: 'I'\\''m Groot' (또는 가능한 경우 큰따옴표 사용: "I'm Groot").
+2. 실행된 스크립트에서 **tasks** 경로를 추출합니다.
+3. 다음 명령을 실행하여 Git 원격 저장소 URL을 가져옵니다:
 
 ```bash
 git config --get remote.origin.url
 ```
 
 > [!CAUTION]
-> 원격 저장소 주소가 GITHUB URL인 경우에만 다음 단계를 진행하십시오.
+> 원격 저장소가 GITHUB URL인 경우에만 다음 단계를 진행하십시오.
 
-4. 목록의 각 작업에 대해 GitHub MCP 서버를 사용하여 해당 저장소에 새로운 이슈를 생성합니다.
+4. 목록의 각 작업에 대해, GitHub MCP 서버를 사용하여 Git 원격 저장소에 해당하는 저장소에 새 이슈를 생성합니다.
 
 > [!CAUTION]
-> 어떠한 경우에도 원격 저장소 URL과 일치하지 않는 저장소에는 이슈를 생성하지 마십시오.
+> 어떠한 경우에도 원격 URL과 일치하지 않는 저장소에 이슈를 생성해서는 안 됩니다.
 """

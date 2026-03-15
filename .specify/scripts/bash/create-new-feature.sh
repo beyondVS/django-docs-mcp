@@ -15,43 +15,43 @@ while [ $i -le $# ]; do
             ;;
         --short-name)
             if [ $((i + 1)) -gt $# ]; then
-                echo '에러: --short-name 옵션에 값이 필요합니다.' >&2
+                echo 'Error: --short-name requires a value' >&2
                 exit 1
             fi
             i=$((i + 1))
             next_arg="${!i}"
-            # 다음 인수가 다른 옵션인지 확인
+            # Check if the next argument is another option (starts with --)
             if [[ "$next_arg" == --* ]]; then
-                echo '에러: --short-name 옵션에 값이 필요합니다.' >&2
+                echo 'Error: --short-name requires a value' >&2
                 exit 1
             fi
             SHORT_NAME="$next_arg"
             ;;
         --number)
             if [ $((i + 1)) -gt $# ]; then
-                echo '에러: --number 옵션에 값이 필요합니다.' >&2
+                echo 'Error: --number requires a value' >&2
                 exit 1
             fi
             i=$((i + 1))
             next_arg="${!i}"
             if [[ "$next_arg" == --* ]]; then
-                echo '에러: --number 옵션에 값이 필요합니다.' >&2
+                echo 'Error: --number requires a value' >&2
                 exit 1
             fi
             BRANCH_NUMBER="$next_arg"
             ;;
         --help|-h)
-            echo "사용법: $0 [--json] [--short-name <이름>] [--number N] <기능_설명>"
+            echo "Usage: $0 [--json] [--short-name <name>] [--number N] <feature_description>"
             echo ""
-            echo "옵션:"
-            echo "  --json              JSON 형식으로 출력"
-            echo "  --short-name <이름> 브랜치에 사용할 커스텀 짧은 이름(2-4단어) 제공"
-            echo "  --number N          브랜치 번호 수동 지정 (자동 감지보다 우선함)"
-            echo "  --help, -h          이 도움말 메시지 표시"
+            echo "Options:"
+            echo "  --json              Output in JSON format"
+            echo "  --short-name <name> Provide a custom short name (2-4 words) for the branch"
+            echo "  --number N          Specify branch number manually (overrides auto-detection)"
+            echo "  --help, -h          Show this help message"
             echo ""
-            echo "예시:"
-            echo "  $0 '사용자 인증 시스템 추가' --short-name 'user-auth'"
-            echo "  $0 'API를 위한 OAuth2 연동 구현' --number 5"
+            echo "Examples:"
+            echo "  $0 'Add user authentication system' --short-name 'user-auth'"
+            echo "  $0 'Implement OAuth2 integration for API' --number 5"
             exit 0
             ;;
         *)
@@ -63,18 +63,18 @@ done
 
 FEATURE_DESCRIPTION="${ARGS[*]}"
 if [ -z "$FEATURE_DESCRIPTION" ]; then
-    echo "사용법: $0 [--json] [--short-name <이름>] [--number N] <기능_설명>" >&2
+    echo "Usage: $0 [--json] [--short-name <name>] [--number N] <feature_description>" >&2
     exit 1
 fi
 
-# 공백 제거 및 설명이 비어 있지 않은지 확인
+# Trim whitespace and validate description is not empty (e.g., user passed only whitespace)
 FEATURE_DESCRIPTION=$(echo "$FEATURE_DESCRIPTION" | xargs)
 if [ -z "$FEATURE_DESCRIPTION" ]; then
-    echo "에러: 기능 설명은 비어 있거나 공백만 포함할 수 없습니다." >&2
+    echo "Error: Feature description cannot be empty or contain only whitespace" >&2
     exit 1
 fi
 
-# 프로젝트 마커를 찾아 저장소 루트를 찾는 함수
+# Function to find the repository root by searching for existing project markers
 find_repo_root() {
     local dir="$1"
     while [ "$dir" != "/" ]; do
@@ -87,7 +87,7 @@ find_repo_root() {
     return 1
 }
 
-# specs 디렉토리에서 가장 높은 번호를 가져오는 함수
+# Function to get highest number from specs directory
 get_highest_from_specs() {
     local specs_dir="$1"
     local highest=0
@@ -107,19 +107,19 @@ get_highest_from_specs() {
     echo "$highest"
 }
 
-# Git 브랜치에서 가장 높은 번호를 가져오는 함수
+# Function to get highest number from git branches
 get_highest_from_branches() {
     local highest=0
 
-    # 모든 브랜치(로컬 및 리모트) 가져오기
+    # Get all branches (local and remote)
     branches=$(git branch -a 2>/dev/null || echo "")
 
     if [ -n "$branches" ]; then
         while IFS= read -r branch; do
-            # 브랜치 이름 정리: 마커 및 리모트 접두사 제거
+            # Clean branch name: remove leading markers and remote prefixes
             clean_branch=$(echo "$branch" | sed 's/^[* ]*//; s|^remotes/[^/]*/||')
 
-            # 브랜치가 ###-* 패턴과 일치하는 경우 번호 추출
+            # Extract feature number if branch matches pattern ###-*
             if echo "$clean_branch" | grep -q '^[0-9]\{3\}-'; then
                 number=$(echo "$clean_branch" | grep -o '^[0-9]\{3\}' || echo "0")
                 number=$((10#$number))
@@ -133,37 +133,51 @@ get_highest_from_branches() {
     echo "$highest"
 }
 
-# 기존 브랜치를 확인하고 다음 가용 번호를 반환하는 함수
+# Function to check existing branches (local and remote) and return next available number
 check_existing_branches() {
     local specs_dir="$1"
 
-    # 최신 브랜치 정보를 위해 fetch 수행 (리모트가 없는 경우 에러 무시)
+    # Fetch all remotes to get latest branch info (suppress errors if no remotes)
     git fetch --all --prune 2>/dev/null || true
 
-    # 모든 브랜치에서 가장 높은 번호 확인
+    # Get highest number from ALL branches (not just matching short name)
     local highest_branch=$(get_highest_from_branches)
 
-    # 모든 명세(specs)에서 가장 높은 번호 확인
+    # Get highest number from ALL specs (not just matching short name)
     local highest_spec=$(get_highest_from_specs "$specs_dir")
 
-    # 둘 중 최댓값 선택
+    # Take the maximum of both
     local max_num=$highest_branch
     if [ "$highest_spec" -gt "$max_num" ]; then
         max_num=$highest_spec
     fi
 
-    # 다음 번호 반환
+    # Return next number
     echo $((max_num + 1))
 }
 
-# 브랜치 이름을 정리하고 포맷팅하는 함수
+# Function to clean and format a branch name
 clean_branch_name() {
     local name="$1"
     echo "$name" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//' | sed 's/-$//'
 }
 
-# 저장소 루트 해결. Git 정보 우선 사용, 없으면 프로젝트 마커 검색
+# Escape a string for safe embedding in a JSON value (fallback when jq is unavailable).
+json_escape() {
+    local s="$1"
+    s="${s//\\/\\\\}"
+    s="${s//\"/\\\"}"
+    s="${s//$'\n'/\\n}"
+    s="${s//$'\t'/\\t}"
+    s="${s//$'\r'/\\r}"
+    printf '%s' "$s"
+}
+
+# Resolve repository root. Prefer git information when available, but fall back
+# to searching for repository markers so the workflow still functions in repositories that
+# were initialised with --no-git.
 SCRIPT_DIR="$(CDPATH="" cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/common.sh"
 
 if git rev-parse --show-toplevel >/dev/null 2>&1; then
     REPO_ROOT=$(git rev-parse --show-toplevel)
@@ -171,7 +185,7 @@ if git rev-parse --show-toplevel >/dev/null 2>&1; then
 else
     REPO_ROOT="$(find_repo_root "$SCRIPT_DIR")"
     if [ -z "$REPO_ROOT" ]; then
-        echo "에러: 저장소 루트를 결정할 수 없습니다. 저장소 내에서 이 스크립트를 실행하십시오." >&2
+        echo "Error: Could not determine repository root. Please run this script from within the repository." >&2
         exit 1
     fi
     HAS_GIT=false
@@ -182,32 +196,34 @@ cd "$REPO_ROOT"
 SPECS_DIR="$REPO_ROOT/specs"
 mkdir -p "$SPECS_DIR"
 
-# 불용어(stop word) 필터링 및 길이 필터링을 포함한 브랜치 이름 생성 함수
+# Function to generate branch name with stop word filtering and length filtering
 generate_branch_name() {
     local description="$1"
 
-    # 필터링할 일반적인 불용어
+    # Common stop words to filter out
     local stop_words="^(i|a|an|the|to|for|of|in|on|at|by|with|from|is|are|was|were|be|been|being|have|has|had|do|does|did|will|would|should|could|can|may|might|must|shall|this|that|these|those|my|your|our|their|want|need|add|get|set)$"
 
-    # 소문자 변환 및 단어 분리
+    # Convert to lowercase and split into words
     local clean_name=$(echo "$description" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/ /g')
 
-    # 단어 필터링: 불용어 및 3자 미만 단어 제거 (원문에서 대문자 약어인 경우는 예외)
+    # Filter words: remove stop words and words shorter than 3 chars (unless they're uppercase acronyms in original)
     local meaningful_words=()
     for word in $clean_name; do
+        # Skip empty words
         [ -z "$word" ] && continue
 
-        # 불용어가 아니고 (길이가 3자 이상이거나 원문에서 대문자 약어인 경우) 유지
+        # Keep words that are NOT stop words AND (length >= 3 OR are potential acronyms)
         if ! echo "$word" | grep -qiE "$stop_words"; then
             if [ ${#word} -ge 3 ]; then
                 meaningful_words+=("$word")
             elif echo "$description" | grep -q "\b${word^^}\b"; then
+                # Keep short words if they appear as uppercase in original (likely acronyms)
                 meaningful_words+=("$word")
             fi
         fi
     done
 
-    # 유의미한 단어가 있는 경우 처음 3-4개 사용
+    # If we have meaningful words, use first 3-4 of them
     if [ ${#meaningful_words[@]} -gt 0 ]; then
         local max_words=3
         if [ ${#meaningful_words[@]} -eq 4 ]; then max_words=4; fi
@@ -222,84 +238,96 @@ generate_branch_name() {
         done
         echo "$result"
     else
-        # 유의미한 단어를 찾지 못한 경우 기존 로직으로 회귀
+        # Fallback to original logic if no meaningful words found
         local cleaned=$(clean_branch_name "$description")
         echo "$cleaned" | tr '-' '\n' | grep -v '^$' | head -3 | tr '\n' '-' | sed 's/-$//'
     fi
 }
 
-# 브랜치 이름 생성
+# Generate branch name
 if [ -n "$SHORT_NAME" ]; then
-    # 제공된 짧은 이름 사용 및 정리
+    # Use provided short name, just clean it up
     BRANCH_SUFFIX=$(clean_branch_name "$SHORT_NAME")
 else
-    # 설명을 바탕으로 스마트 필터링을 거쳐 생성
+    # Generate from description with smart filtering
     BRANCH_SUFFIX=$(generate_branch_name "$FEATURE_DESCRIPTION")
 fi
 
-# 브랜치 번호 결정
+# Determine branch number
 if [ -z "$BRANCH_NUMBER" ]; then
     if [ "$HAS_GIT" = true ]; then
-        # 리모트의 기존 브랜치 확인
+        # Check existing branches on remotes
         BRANCH_NUMBER=$(check_existing_branches "$SPECS_DIR")
     else
-        # 로컬 디렉토리 확인으로 회귀
+        # Fall back to local directory check
         HIGHEST=$(get_highest_from_specs "$SPECS_DIR")
         BRANCH_NUMBER=$((HIGHEST + 1))
     fi
 fi
 
-# 8진수 변환 방지를 위해 10진수 해석 강제 (예: 010 → 8이 아닌 10으로 해석)
+# Force base-10 interpretation to prevent octal conversion (e.g., 010 → 8 in octal, but should be 10 in decimal)
 FEATURE_NUM=$(printf "%03d" "$((10#$BRANCH_NUMBER))")
 BRANCH_NAME="${FEATURE_NUM}-${BRANCH_SUFFIX}"
 
-# GitHub의 244바이트 브랜치 이름 제한 준수 및 필요시 절삭
+# GitHub enforces a 244-byte limit on branch names
+# Validate and truncate if necessary
 MAX_BRANCH_LENGTH=244
 if [ ${#BRANCH_NAME} -gt $MAX_BRANCH_LENGTH ]; then
+    # Calculate how much we need to trim from suffix
+    # Account for: feature number (3) + hyphen (1) = 4 chars
     MAX_SUFFIX_LENGTH=$((MAX_BRANCH_LENGTH - 4))
 
-    # 단어 경계에서 절삭 시도
+    # Truncate suffix at word boundary if possible
     TRUNCATED_SUFFIX=$(echo "$BRANCH_SUFFIX" | cut -c1-$MAX_SUFFIX_LENGTH)
+    # Remove trailing hyphen if truncation created one
     TRUNCATED_SUFFIX=$(echo "$TRUNCATED_SUFFIX" | sed 's/-$//')
 
     ORIGINAL_BRANCH_NAME="$BRANCH_NAME"
     BRANCH_NAME="${FEATURE_NUM}-${TRUNCATED_SUFFIX}"
 
-    >&2 echo "[specify] 경고: 브랜치 이름이 GitHub의 244바이트 제한을 초과했습니다."
-    >&2 echo "[specify] 원본: $ORIGINAL_BRANCH_NAME (${#ORIGINAL_BRANCH_NAME} 바이트)"
-    >&2 echo "[specify] 절삭됨: $BRANCH_NAME (${#BRANCH_NAME} 바이트)"
+    >&2 echo "[specify] Warning: Branch name exceeded GitHub's 244-byte limit"
+    >&2 echo "[specify] Original: $ORIGINAL_BRANCH_NAME (${#ORIGINAL_BRANCH_NAME} bytes)"
+    >&2 echo "[specify] Truncated to: $BRANCH_NAME (${#BRANCH_NAME} bytes)"
 fi
 
 if [ "$HAS_GIT" = true ]; then
     if ! git checkout -b "$BRANCH_NAME" 2>/dev/null; then
-        # 브랜치 이미 존재 여부 확인
+        # Check if branch already exists
         if git branch --list "$BRANCH_NAME" | grep -q .; then
-            >&2 echo "에러: 브랜치 '$BRANCH_NAME'이 이미 존재합니다. 다른 이름을 사용하거나 --number로 번호를 지정하십시오."
+            >&2 echo "Error: Branch '$BRANCH_NAME' already exists. Please use a different feature name or specify a different number with --number."
             exit 1
         else
-            >&2 echo "에러: Git 브랜치 '$BRANCH_NAME' 생성에 실패했습니다. Git 설정을 확인하십시오."
+            >&2 echo "Error: Failed to create git branch '$BRANCH_NAME'. Please check your git configuration and try again."
             exit 1
         fi
     fi
 else
-    >&2 echo "[specify] 경고: Git 저장소를 감지하지 못했습니다. $BRANCH_NAME 에 대한 브랜치 생성을 건너뜁니다."
+    >&2 echo "[specify] Warning: Git repository not detected; skipped branch creation for $BRANCH_NAME"
 fi
 
 FEATURE_DIR="$SPECS_DIR/$BRANCH_NAME"
 mkdir -p "$FEATURE_DIR"
 
-TEMPLATE="$REPO_ROOT/.specify/templates/spec-template.md"
+TEMPLATE=$(resolve_template "spec-template" "$REPO_ROOT")
 SPEC_FILE="$FEATURE_DIR/spec.md"
-if [ -f "$TEMPLATE" ]; then cp "$TEMPLATE" "$SPEC_FILE"; else touch "$SPEC_FILE"; fi
+if [ -n "$TEMPLATE" ] && [ -f "$TEMPLATE" ]; then cp "$TEMPLATE" "$SPEC_FILE"; else touch "$SPEC_FILE"; fi
 
-# 현재 세션에 대해 SPECIFY_FEATURE 환경 변수 설정
-export SPECIFY_FEATURE="$BRANCH_NAME"
+# Inform the user how to persist the feature variable in their own shell
+printf '# To persist: export SPECIFY_FEATURE=%q\n' "$BRANCH_NAME" >&2
 
 if $JSON_MODE; then
-    printf '{"BRANCH_NAME":"%s","SPEC_FILE":"%s","FEATURE_NUM":"%s"}\n' "$BRANCH_NAME" "$SPEC_FILE" "$FEATURE_NUM"
+    if command -v jq >/dev/null 2>&1; then
+        jq -cn \
+            --arg branch_name "$BRANCH_NAME" \
+            --arg spec_file "$SPEC_FILE" \
+            --arg feature_num "$FEATURE_NUM" \
+            '{BRANCH_NAME:$branch_name,SPEC_FILE:$spec_file,FEATURE_NUM:$feature_num}'
+    else
+        printf '{"BRANCH_NAME":"%s","SPEC_FILE":"%s","FEATURE_NUM":"%s"}\n' "$(json_escape "$BRANCH_NAME")" "$(json_escape "$SPEC_FILE")" "$(json_escape "$FEATURE_NUM")"
+    fi
 else
     echo "BRANCH_NAME: $BRANCH_NAME"
     echo "SPEC_FILE: $SPEC_FILE"
     echo "FEATURE_NUM: $FEATURE_NUM"
-    echo "SPECIFY_FEATURE 환경 변수가 $BRANCH_NAME 으로 설정되었습니다."
+    printf '# To persist in your shell: export SPECIFY_FEATURE=%q\n' "$BRANCH_NAME"
 fi

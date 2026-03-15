@@ -1,5 +1,5 @@
 #!/usr/bin/env pwsh
-# 새로운 기능 생성
+# Create a new feature
 [CmdletBinding()]
 param(
     [switch]$Json,
@@ -11,37 +11,39 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 
-# 도움말 요청 시 표시
+# Show help if requested
 if ($Help) {
-    Write-Host "사용법: ./create-new-feature.ps1 [-Json] [-ShortName <이름>] [-Number N] <기능 설명>"
+    Write-Host "Usage: ./create-new-feature.ps1 [-Json] [-ShortName <name>] [-Number N] <feature description>"
     Write-Host ""
-    Write-Host "옵션:"
-    Write-Host "  -Json               JSON 형식으로 출력"
-    Write-Host "  -ShortName <이름>   브랜치에 사용할 커스텀 짧은 이름(2-4단어) 제공"
-    Write-Host "  -Number N           브랜치 번호 수동 지정 (자동 감지보다 우선함)"
-    Write-Host "  -Help               이 도움말 메시지 표시"
+    Write-Host "Options:"
+    Write-Host "  -Json               Output in JSON format"
+    Write-Host "  -ShortName <name>   Provide a custom short name (2-4 words) for the branch"
+    Write-Host "  -Number N           Specify branch number manually (overrides auto-detection)"
+    Write-Host "  -Help               Show this help message"
     Write-Host ""
-    Write-Host "예시:"
-    Write-Host "  ./create-new-feature.ps1 '사용자 인증 시스템 추가' -ShortName 'user-auth'"
-    Write-Host "  ./create-new-feature.ps1 'API를 위한 OAuth2 연동 구현'"
+    Write-Host "Examples:"
+    Write-Host "  ./create-new-feature.ps1 'Add user authentication system' -ShortName 'user-auth'"
+    Write-Host "  ./create-new-feature.ps1 'Implement OAuth2 integration for API'"
     exit 0
 }
 
-# 기능 설명 제공 여부 확인
+# Check if feature description provided
 if (-not $FeatureDescription -or $FeatureDescription.Count -eq 0) {
-    Write-Error "사용법: ./create-new-feature.ps1 [-Json] [-ShortName <이름>] <기능 설명>"
+    Write-Error "Usage: ./create-new-feature.ps1 [-Json] [-ShortName <name>] <feature description>"
     exit 1
 }
 
 $featureDesc = ($FeatureDescription -join ' ').Trim()
 
-# 공백 제거 후 설명이 비어 있지 않은지 확인
+# Validate description is not empty after trimming (e.g., user passed only whitespace)
 if ([string]::IsNullOrWhiteSpace($featureDesc)) {
-    Write-Error "에러: 기능 설명은 비어 있거나 공백만 포함할 수 없습니다."
+    Write-Error "Error: Feature description cannot be empty or contain only whitespace"
     exit 1
 }
 
-# 프로젝트 마커를 찾아 저장소 루트를 찾는 함수
+# Resolve repository root. Prefer git information when available, but fall back
+# to searching for repository markers so the workflow still functions in repositories that
+# were initialized with --no-git.
 function Find-RepositoryRoot {
     param(
         [string]$StartDir,
@@ -56,7 +58,7 @@ function Find-RepositoryRoot {
         }
         $parent = Split-Path $current -Parent
         if ($parent -eq $current) {
-            # 마커를 찾지 못하고 파일 시스템 루트에 도달
+            # Reached filesystem root without finding markers
             return $null
         }
         $current = $parent
@@ -86,10 +88,10 @@ function Get-HighestNumberFromBranches {
         $branches = git branch -a 2>$null
         if ($LASTEXITCODE -eq 0) {
             foreach ($branch in $branches) {
-                # 브랜치 이름 정리: 마커 및 리모트 접두사 제거
+                # Clean branch name: remove leading markers and remote prefixes
                 $cleanBranch = $branch.Trim() -replace '^\*?\s+', '' -replace '^remotes/[^/]+/', ''
 
-                # 브랜치가 ###-* 패턴과 일치하는 경우 번호 추출
+                # Extract feature number if branch matches pattern ###-*
                 if ($cleanBranch -match '^(\d+)-') {
                     $num = [int]$matches[1]
                     if ($num -gt $highest) { $highest = $num }
@@ -97,8 +99,8 @@ function Get-HighestNumberFromBranches {
             }
         }
     } catch {
-        # Git 명령어 실패 시 0 반환
-        Write-Verbose "Git 브랜치 확인 불가: $_"
+        # If git command fails, return 0
+        Write-Verbose "Could not check Git branches: $_"
     }
     return $highest
 }
@@ -108,23 +110,23 @@ function Get-NextBranchNumber {
         [string]$SpecsDir
     )
 
-    # 리모트 정보 fetch (에러 무시)
+    # Fetch all remotes to get latest branch info (suppress errors if no remotes)
     try {
         git fetch --all --prune 2>$null | Out-Null
     } catch {
-        # fetch 에러 무시
+        # Ignore fetch errors
     }
 
-    # 모든 브랜치에서 가장 높은 번호 확인
+    # Get highest number from ALL branches (not just matching short name)
     $highestBranch = Get-HighestNumberFromBranches
 
-    # 모든 명세(specs)에서 가장 높은 번호 확인
+    # Get highest number from ALL specs (not just matching short name)
     $highestSpec = Get-HighestNumberFromSpecs -SpecsDir $SpecsDir
 
-    # 둘 중 최댓값 선택
+    # Take the maximum of both
     $maxNum = [Math]::Max($highestBranch, $highestSpec)
 
-    # 다음 번호 반환
+    # Return next number
     return $maxNum + 1
 }
 
@@ -133,19 +135,21 @@ function ConvertTo-CleanBranchName {
 
     return $Name.ToLower() -replace '[^a-z0-9]', '-' -replace '-{2,}', '-' -replace '^-', '' -replace '-$', ''
 }
-
 $fallbackRoot = (Find-RepositoryRoot -StartDir $PSScriptRoot)
 if (-not $fallbackRoot) {
-    Write-Error "에러: 저장소 루트를 결정할 수 없습니다. 저장소 내에서 이 스크립트를 실행하십시오."
+    Write-Error "Error: Could not determine repository root. Please run this script from within the repository."
     exit 1
 }
+
+# Load common functions (includes Resolve-Template)
+. "$PSScriptRoot/common.ps1"
 
 try {
     $repoRoot = git rev-parse --show-toplevel 2>$null
     if ($LASTEXITCODE -eq 0) {
         $hasGit = $true
     } else {
-        throw "Git 사용 불가"
+        throw "Git not available"
     }
 } catch {
     $repoRoot = $fallbackRoot
@@ -157,11 +161,11 @@ Set-Location $repoRoot
 $specsDir = Join-Path $repoRoot 'specs'
 New-Item -ItemType Directory -Path $specsDir -Force | Out-Null
 
-# 불용어 필터링 및 길이 필터링을 포함한 브랜치 이름 생성 함수
+# Function to generate branch name with stop word filtering and length filtering
 function Get-BranchName {
     param([string]$Description)
 
-    # 필터링할 일반적인 불용어
+    # Common stop words to filter out
     $stopWords = @(
         'i', 'a', 'an', 'the', 'to', 'for', 'of', 'in', 'on', 'at', 'by', 'with', 'from',
         'is', 'are', 'was', 'were', 'be', 'been', 'being', 'have', 'has', 'had',
@@ -170,51 +174,54 @@ function Get-BranchName {
         'want', 'need', 'add', 'get', 'set'
     )
 
-    # 소문자 변환 및 단어 추출
+    # Convert to lowercase and extract words (alphanumeric only)
     $cleanName = $Description.ToLower() -replace '[^a-z0-9\s]', ' '
     $words = $cleanName -split '\s+' | Where-Object { $_ }
 
-    # 단어 필터링: 불용어 및 3자 미만 단어 제거
+    # Filter words: remove stop words and words shorter than 3 chars (unless they're uppercase acronyms in original)
     $meaningfulWords = @()
     foreach ($word in $words) {
+        # Skip stop words
         if ($stopWords -contains $word) { continue }
 
+        # Keep words that are length >= 3 OR appear as uppercase in original (likely acronyms)
         if ($word.Length -ge 3) {
             $meaningfulWords += $word
         } elseif ($Description -match "\b$($word.ToUpper())\b") {
+            # Keep short words if they appear as uppercase in original (likely acronyms)
             $meaningfulWords += $word
         }
     }
 
-    # 유의미한 단어가 있는 경우 처음 3-4개 사용
+    # If we have meaningful words, use first 3-4 of them
     if ($meaningfulWords.Count -gt 0) {
         $maxWords = if ($meaningfulWords.Count -eq 4) { 4 } else { 3 }
         $result = ($meaningfulWords | Select-Object -First $maxWords) -join '-'
         return $result
     } else {
-        # 유의미한 단어를 찾지 못한 경우 기존 로직으로 회귀
+        # Fallback to original logic if no meaningful words found
         $result = ConvertTo-CleanBranchName -Name $Description
         $fallbackWords = ($result -split '-') | Where-Object { $_ } | Select-Object -First 3
         return [string]::Join('-', $fallbackWords)
     }
 }
 
-# 브랜치 이름 생성
+# Generate branch name
 if ($ShortName) {
-    # 제공된 짧은 이름 사용 및 정리
+    # Use provided short name, just clean it up
     $branchSuffix = ConvertTo-CleanBranchName -Name $ShortName
 } else {
-    # 설명을 바탕으로 스마트 필터링을 거쳐 생성
+    # Generate from description with smart filtering
     $branchSuffix = Get-BranchName -Description $featureDesc
 }
 
-# 브랜치 번호 결정
+# Determine branch number
 if ($Number -eq 0) {
     if ($hasGit) {
-        # 리모트의 기존 브랜치 확인
+        # Check existing branches on remotes
         $Number = Get-NextBranchNumber -SpecsDir $specsDir
     } else {
-        # 로컬 디렉토리 확인으로 회귀
+        # Fall back to local directory check
         $Number = (Get-HighestNumberFromSpecs -SpecsDir $specsDir) + 1
     }
 }
@@ -222,21 +229,25 @@ if ($Number -eq 0) {
 $featureNum = ('{0:000}' -f $Number)
 $branchName = "$featureNum-$branchSuffix"
 
-# GitHub의 244바이트 브랜치 이름 제한 준수 및 필요시 절삭
+# GitHub enforces a 244-byte limit on branch names
+# Validate and truncate if necessary
 $maxBranchLength = 244
 if ($branchName.Length -gt $maxBranchLength) {
+    # Calculate how much we need to trim from suffix
+    # Account for: feature number (3) + hyphen (1) = 4 chars
     $maxSuffixLength = $maxBranchLength - 4
 
-    # 절삭
+    # Truncate suffix
     $truncatedSuffix = $branchSuffix.Substring(0, [Math]::Min($branchSuffix.Length, $maxSuffixLength))
+    # Remove trailing hyphen if truncation created one
     $truncatedSuffix = $truncatedSuffix -replace '-$', ''
 
     $originalBranchName = $branchName
     $branchName = "$featureNum-$truncatedSuffix"
 
-    Write-Warning "[specify] 브랜치 이름이 GitHub의 244바이트 제한을 초과했습니다."
-    Write-Warning "[specify] 원본: $originalBranchName ($($originalBranchName.Length) 바이트)"
-    Write-Warning "[specify] 절삭됨: $branchName ($($branchName.Length) 바이트)"
+    Write-Warning "[specify] Branch name exceeded GitHub's 244-byte limit"
+    Write-Warning "[specify] Original: $originalBranchName ($($originalBranchName.Length) bytes)"
+    Write-Warning "[specify] Truncated to: $branchName ($($branchName.Length) bytes)"
 }
 
 if ($hasGit) {
@@ -247,36 +258,36 @@ if ($hasGit) {
             $branchCreated = $true
         }
     } catch {
-        # Git 명령어 실행 중 예외 발생
+        # Exception during git command
     }
 
     if (-not $branchCreated) {
-        # 브랜치 이미 존재 여부 확인
+        # Check if branch already exists
         $existingBranch = git branch --list $branchName 2>$null
         if ($existingBranch) {
-            Write-Error "에러: 브랜치 '$branchName'이 이미 존재합니다. 다른 이름을 사용하거나 -Number로 번호를 지정하십시오."
+            Write-Error "Error: Branch '$branchName' already exists. Please use a different feature name or specify a different number with -Number."
             exit 1
         } else {
-            Write-Error "에러: Git 브랜치 '$branchName' 생성에 실패했습니다. Git 설정을 확인하십시오."
+            Write-Error "Error: Failed to create git branch '$branchName'. Please check your git configuration and try again."
             exit 1
         }
     }
 } else {
-    Write-Warning "[specify] 경고: Git 저장소를 감지하지 못했습니다. $branchName 에 대한 브랜치 생성을 건너뜁니다."
+    Write-Warning "[specify] Warning: Git repository not detected; skipped branch creation for $branchName"
 }
 
 $featureDir = Join-Path $specsDir $branchName
 New-Item -ItemType Directory -Path $featureDir -Force | Out-Null
 
-$template = Join-Path $repoRoot '.specify/templates/spec-template.md'
+$template = Resolve-Template -TemplateName 'spec-template' -RepoRoot $repoRoot
 $specFile = Join-Path $featureDir 'spec.md'
-if (Test-Path $template) {
+if ($template -and (Test-Path $template)) {
     Copy-Item $template $specFile -Force
 } else {
     New-Item -ItemType File -Path $specFile | Out-Null
 }
 
-# 현재 세션에 대해 SPECIFY_FEATURE 환경 변수 설정
+# Set the SPECIFY_FEATURE environment variable for the current session
 $env:SPECIFY_FEATURE = $branchName
 
 if ($Json) {
@@ -292,5 +303,5 @@ if ($Json) {
     Write-Output "SPEC_FILE: $specFile"
     Write-Output "FEATURE_NUM: $featureNum"
     Write-Output "HAS_GIT: $hasGit"
-    Write-Output "SPECIFY_FEATURE 환경 변수가 $branchName 으로 설정되었습니다."
+    Write-Output "SPECIFY_FEATURE environment variable set to: $branchName"
 }
