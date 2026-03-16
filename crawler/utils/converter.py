@@ -49,7 +49,7 @@ def extract_content(html: str) -> str:
     # 2. Readability 폴백 (구조적 선택자가 실패한 경우)
     try:
         doc = Document(html)
-        content = doc.summary()
+        content = str(doc.summary())
         content_soup = BeautifulSoup(content, "lxml")
         if len(content_soup.get_text(strip=True)) > 200:
             return content
@@ -74,12 +74,6 @@ def to_markdown(html_content: str, source_url: str) -> str:
     Returns:
         str: YAML 메타데이터가 포함된 마크다운 문자열.
     """
-
-    # markdownify를 위한 커스텀 코드 언어 콜백 함수
-    def code_language_callback(el):
-        # markdownify가 기본적으로 표준 코드 블록을 처리하지만,
-        # 'language-' 클래스를 감지하여 언어 힌트를 추출할 수 있습니다.
-        pass
 
     # 마크다운으로 변환합니다.
     markdown_content = md(

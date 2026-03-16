@@ -10,7 +10,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "ruff~=0.15.5",
+    "ruff~=0.15.6",
     "pre-commit~=4.5.1",
     "mypy~=1.19.1",
     "django-stubs[compatible-mypy]~=5.2.9",
@@ -100,6 +100,8 @@ warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
 explicit_package_bases = true
+mypy_path = ["crawler", "django_server", "mcp_server"]
+ignore_missing_imports = true
 
 # plugins = ["mypy_django_plugin.main"]
 
@@ -107,14 +109,6 @@ explicit_package_bases = true
 # Ignore migration files as they are auto-generated and often untyped
 module = "*.migrations.*"
 ignore_errors = true
-
-[[tool.mypy.overrides]]
-# Ignore missing imports for third-party libraries without stubs
-module = [
-    "django.*",
-    "pgvector.*"
-]
-ignore_missing_imports = true
 
 # ==============================================================================
 # Django Stubs Configuration (Optional, activate when installed)
