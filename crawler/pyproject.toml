@@ -15,3 +15,11 @@ dependencies = [
 
 [dependency-groups]
 dev = []
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+asyncio_mode = "strict"

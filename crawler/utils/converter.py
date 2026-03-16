@@ -3,45 +3,60 @@ from datetime import UTC, datetime
 from bs4 import BeautifulSoup
 from markdownify import markdownify as md
 from readability import Document
-
-from crawler.utils.logger import get_logger
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 
 
 def extract_content(html: str) -> str:
     """
-    readability-lxml을 사용하여 HTML에서 본문 내용을 추출합니다.
-    readability가 실패할 경우 BeautifulSoup을 사용한 폴백 로직을 실행합니다.
+    HTML에서 본문 내용을 추출합니다.
+    기술 문서에 특화된 BeautifulSoup 선택자 기반 로직을 우선 사용하며,
+    실패할 경우 Readability-lxml을 폴백으로 사용합니다.
 
     Args:
         html (str): 원본 HTML 문자열.
 
     Returns:
-        str: 추출된 HTML 본문.
+        str: 추출된 본문 HTML 문자열. 추출에 실패할 경우 body 또는 원본 HTML을 반환합니다.
     """
+    soup = BeautifulSoup(html, "lxml")
+
+    # 1. 명시적인 본문 선택자 시도 (최우선)
+    # 노이즈 제거 (네비게이션, 푸터 등)
+    for noise in soup.select("nav, footer, header, .sidebar, .related, .footer"):
+        noise.decompose()
+
+    # 본문 선택자 후보 (우선순위 순)
+    selectors = [
+        '[role="main"]',
+        '[itemprop="articleBody"]',
+        ".document",
+        "article",
+        "main",
+        ".body",
+        ".section",
+        "#content",
+        ".content",
+    ]
+
+    for selector in selectors:
+        element = soup.select_one(selector)
+        # 충분한 내용이 있는지 확인
+        if element and len(element.get_text(strip=True)) > 200:
+            return str(element)
+
+    # 2. Readability 폴백 (구조적 선택자가 실패한 경우)
     try:
         doc = Document(html)
         content = doc.summary()
-
-        # 내용이 의미 있는지 확인합니다.
-        soup = BeautifulSoup(content, "lxml")
-        text = soup.get_text(strip=True)
-        if len(text) > 100:
+        content_soup = BeautifulSoup(content, "lxml")
+        if len(content_soup.get_text(strip=True)) > 200:
             return content
     except Exception as e:
-        logger.warning(f"Readability 추출 실패: {e}. 폴백 로직을 시도합니다.")
+        logger.warning(f"Readability 폴백 추출 실패: {e}")
 
-    # BeautifulSoup을 사용한 폴백 로직
-    soup = BeautifulSoup(html, "lxml")
-
-    # 일반적인 본문 컨테이너를 찾습니다.
-    for selector in ["article", "main", ".section", "#content", ".content"]:
-        element = soup.select_one(selector)
-        if element:
-            return str(element)
-
-    # 마지막 수단으로 body 태그 전체를 반환합니다.
+    # 3. 최후의 수단: body 전체
     if soup.body:
         return str(soup.body)
 

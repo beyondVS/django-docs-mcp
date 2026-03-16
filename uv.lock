@@ -367,7 +367,7 @@ dev = [
 [[package]]
 name = "django-server"
 version = "0.1.0"
-source = { editable = "django_server" }
+source = { virtual = "django_server" }
 dependencies = [
     { name = "django" },
 ]
@@ -851,7 +851,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "django-server", editable = "django_server" },
+    { name = "django-server", virtual = "django_server" },
     { name = "fastmcp", specifier = ">=3.1.0" },
 ]
 

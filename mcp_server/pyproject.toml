@@ -8,5 +8,8 @@ dependencies = [
     "django-server",
 ]
 
+[tool.uv]
+package = false
+
 [tool.uv.sources]
 django-server = { workspace = true }

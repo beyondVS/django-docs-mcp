@@ -1,4 +1,4 @@
-from crawler.utils.converter import extract_content, to_markdown
+from utils.converter import extract_content, to_markdown
 
 
 def test_extract_content():
@@ -9,7 +9,8 @@ def test_extract_content():
             <header>Header</header>
             <main>
                 <h1>Main Title</h1>
-                <p>This is the main content of the article that should be extracted by readability.</p>
+                <p>This is the main content of the article that
+                   should be extracted by readability.</p>
                 <p>Some more text to make it longer so readability picks it up.</p>
             </main>
             <footer>Footer</footer>

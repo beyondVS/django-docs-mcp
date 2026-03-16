@@ -3,16 +3,15 @@ import hashlib
 from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
-
-from crawler.utils.converter import extract_content, to_markdown
-from crawler.utils.logger import get_logger
-from crawler.utils.scraper import Scraper
-from crawler.utils.storage import get_file_path, save_file
+from utils.converter import extract_content, to_markdown
+from utils.logger import get_logger
+from utils.scraper import Scraper
+from utils.storage import get_file_path, save_file
 
 logger = get_logger(__name__)
 
 BASE_URL = "https://books.agiliq.com/projects/django-orm-cookbook/en/latest/"
-STORAGE_DIR = "data_sources/django2-orm-cookbook"
+STORAGE_DIR = "../data_sources/django2-orm-cookbook"
 
 
 async def crawl_book():

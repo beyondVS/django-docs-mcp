@@ -1,8 +1,7 @@
 import httpx
 import pytest
 import respx
-
-from crawler.utils.scraper import Scraper
+from utils.scraper import Scraper
 
 
 @pytest.mark.asyncio

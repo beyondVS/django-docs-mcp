@@ -19,6 +19,9 @@ dev = [
     "respx~=0.22.0",
 ]
 
+[tool.uv]
+package = false
+
 [tool.uv.workspace]
 members = ["mcp_server", "django_server", "crawler"]
 
@@ -96,8 +99,9 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 warn_no_return = true
 warn_unreachable = true
+explicit_package_bases = true
 
-plugins = ["mypy_django_plugin.main"]
+# plugins = ["mypy_django_plugin.main"]
 
 [[tool.mypy.overrides]]
 # Ignore migration files as they are auto-generated and often untyped
