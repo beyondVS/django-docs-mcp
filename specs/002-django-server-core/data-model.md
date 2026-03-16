@@ -14,7 +14,7 @@
 ### 2.1 Document
 - `id`: UUID (Primary Key)
 - `title`: String (문서 제목)
-- `version`: String (Django 버전, 예: "5.0", "4.2")
+- `target_version`: String (Django 대상 버전, 예: "5.0", "4.2")
 - `category`: String (문서 유형, 예: "Tutorial", "Reference")
 - `source_path`: String (로컬 파일 시스템 경로)
 - `source_url`: String (원본 공식 문서 URL)
@@ -40,10 +40,10 @@
 
 ## 3. 관계 및 제약 조건 (Relationships & Constraints)
 - **일대다 관계**: Document(1) -> Section(N), Section(1) -> Chunk(N).
-- **고유성**: `Document`는 `source_path`와 `version` 조합으로 유니크해야 함 (Upsert 기준).
+- **고유성**: `Document`는 `source_path`와 `target_version` 조합으로 유니크해야 함 (Upsert 기준).
 - **인덱스**:
   - `Chunk.embedding`: `pgvector`의 **HNSW (Hierarchical Navigable Small World)** 인덱스 적용 (코사인 유사도 검색 최적화).
-  - `Document.version`, `Document.category`: 빠른 필터링을 위한 B-Tree 인덱스 적용.
+  - `Document.target_version`, `Document.category`: 빠른 필터링을 위한 B-Tree 인덱스 적용.
 
 ## 4. 유효성 검사 규칙 (Validation Rules)
 - **청킹 사이즈**: `token_count`는 최대 1000을 넘지 않도록 제한 (오버랩 포함).

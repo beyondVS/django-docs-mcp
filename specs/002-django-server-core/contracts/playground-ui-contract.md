@@ -13,7 +13,7 @@
 - 실시간 타이핑 지원 또는 엔터 키 검색 실행.
 
 ### 필터링 옵션 (Filters)
-- **Django 버전**: 드롭다운 선택 (5.0, 4.2 등) - 기본값: "전체"
+- **Django 대상 버전(target_version)**: 드롭다운 선택 (5.0, 4.2 등) - 기본값: "전체"
 - **문서 카테고리**: 드롭다운 선택 (Tutorial, Reference, Topics) - 기본값: "전체"
 
 ## 3. 검색 결과 레이아웃 (Output)
@@ -23,14 +23,14 @@
 
 ### 개별 결과 항목 (Result Item)
 - **유사도 점수**: 코사인 유사도 점수 (예: 0.892) 시각화 (색상 바 또는 배지).
-- **출처 정보**: 문서 제목, 버전, 섹션 이름 (클릭 시 원본 URL로 이동).
+- **출처 정보**: 문서 제목, 대상 버전(target_version), 섹션 이름 (클릭 시 원본 URL로 이동).
 - **본문 스니펫**: 청크의 텍스트 본문 (코드 블록 하이라이팅 적용).
 - **품질 대조 버튼**: 클릭 시 원본 마크다운 텍스트와 현재 청크를 대조할 수 있는 모달 팝업 노출.
 
 ## 4. API 인터페이스 (Internal)
 Playground 내부적으로 사용하는 검색 엔드포인트 규격입니다.
 - **Endpoint**: `GET /api/search/`
-- **Parameters**: `q` (query), `v` (version), `c` (category)
+- **Parameters**: `q` (query), `tv` (target_version), `c` (category)
 - **Response**: JSON 형식의 검색 결과 리스트 (유사도 순 정렬).
 
 ## 5. 예외 및 빈 상태 처리

@@ -12,7 +12,7 @@
 - `source_path`: 적재할 마크다운 파일 또는 디렉토리 경로 (필수).
 
 ### Optional Flags
-- `--version`: 대상 Django 버전 명시 (예: `--version 5.0`). 기본값: 파일 내 YAML Front Matter 우선.
+- `--target_version`: 대상 Django 버전 명시 (예: `--target_version 5.0`). 기본값: 파일 내 YAML Front Matter 우선.
 - `--category`: 문서 유형 명시 (예: `--category Tutorial`).
 - `--clear`: 적재 전 기존 문서(및 관련 Chunk) 삭제 여부. (Boolean)
 - `--batch-size`: 임베딩 생성 시 한 번에 처리할 Chunk 수 (기본값: 16).
