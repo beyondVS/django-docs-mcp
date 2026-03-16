@@ -46,19 +46,32 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 * [임베딩 및 청킹 전략](./specs/_architecture/embedding_strategy.md)
 * [MCP 도구(Tools) 명세](./specs/_architecture/mcp_tools_contract.md)
 
+## 🛠️ 개발 환경 구축 (Development Setup)
+
+이 프로젝트는 `uv` 워크스페이스를 사용합니다. 개발 시에는 루트 디렉토리에서 아래 명령어를 실행하여 모든 멤버 프로젝트의 의존성을 통합 설치하십시오.
+
+```bash
+# 모든 워크스페이스 멤버와 개발 도구를 한 번에 설치
+uv sync --all-packages
+```
+
 ## 🚦 시작하기 (Getting Started)
 
 현재 지식 베이스 구축(Django Server) 단계가 완료되어 로컬에서 문서 적재 및 검색 테스트가 가능합니다.
 
+### 1. 인프라 실행 (PostgreSQL + pgvector)
 ```bash
-# 1. 인프라 실행 (PostgreSQL + pgvector)
 docker-compose up -d db
+```
 
-# 2. 의존성 설치 및 DB 초기화
+### 2. Django Server 초기화 및 실행
+특정 서비스(예: Django Server)만 독립적으로 실행하거나 Docker 빌드 시에는 해당 디렉토리에서 `uv sync`를 실행하면 필요한 최소 패키지만 설치됩니다.
+
+```bash
 cd django_server
 uv sync
 uv run python src/manage.py migrate
-uv run python src/manage.py createsuperuser
+```
 
 # 3. 데이터 적재 및 임베딩 (Django Command)
 # 예: data_sources/django2-orm-cookbook 폴더 내의 마크다운 파일을 적재

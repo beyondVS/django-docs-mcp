@@ -11,8 +11,6 @@ dependencies = [
     "langchain-text-splitters",
     "django-htmx",
     "python-dotenv",
-    "pytest-django",
-    "pytest-asyncio",
     "python-frontmatter",
     "tqdm",
 ]
