@@ -5,6 +5,16 @@ description = "Add your description here"
 requires-python = ">=3.14"
 dependencies = [
     "django~=5.2.0",
+    "psycopg[binary]>=3.2.1",
+    "pgvector>=0.3.6",
+    "sentence-transformers>=3.0.0",
+    "langchain-text-splitters",
+    "django-htmx",
+    "python-dotenv",
+    "pytest-django",
+    "pytest-asyncio",
+    "python-frontmatter",
+    "tqdm",
 ]
 
 [dependency-groups]

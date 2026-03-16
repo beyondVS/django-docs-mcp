@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Django Docs Search Playground</title>
+    <script src="https://unpkg.com/htmx.org@2.0.0"></script>
+    <style>
+        body { font-family: sans-serif; line-height: 1.6; max-width: 1000px; margin: 0 auto; padding: 20px; color: #333; }
+        header { border-bottom: 2px solid #eee; margin-bottom: 20px; }
+        .search-form { background: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 30px; }
+        .results-container { margin-top: 20px; }
+        .result-item { border: 1px solid #ddd; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+        .result-meta { font-size: 0.8em; color: #666; margin-bottom: 10px; }
+        .similarity-score { color: green; font-weight: bold; }
+        .content { white-space: pre-wrap; background: #fafafa; padding: 10px; border-left: 3px solid #007bff; }
+        select, input[type="text"] { padding: 8px; margin-right: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        button { padding: 8px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Django Docs Search Playground</h1>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+</body>
+</html>

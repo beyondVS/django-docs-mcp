@@ -32,7 +32,8 @@ uv run python src/manage.py createsuperuser
 ## 3. 데이터 적재 (Ingestion)
 `data_sources/` 폴더 내의 마크다운 파일들을 벡터 데이터베이스에 적재합니다.
 ```bash
-uv run python src/manage.py ingest_docs ../data_sources/django2-orm-cookbook/ --version 4.2 --category Reference
+cd django_server
+uv run python src/manage.py ingest_docs ../data_sources/django2-orm-cookbook/ --doc-version 4.2 --category Reference
 ```
 
 ## 4. Playground 실행
