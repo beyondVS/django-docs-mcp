@@ -46,23 +46,61 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 * [임베딩 및 청킹 전략](./specs/_architecture/embedding_strategy.md)
 * [MCP 도구(Tools) 명세](./specs/_architecture/mcp_tools_contract.md)
 
-## 🚦 시작하기 (진행 중)
+## 🛠️ 개발 환경 구축 (Development Setup)
 
-현재 아키텍처 설계 및 인프라 구축 단계에 있습니다. 추후 아래와 같은 흐름으로 실행될 예정입니다.
+이 프로젝트는 `uv` 워크스페이스를 사용합니다. 개발 시에는 루트 디렉토리에서 아래 명령어를 실행하여 모든 멤버 프로젝트의 의존성을 통합 설치하십시오.
 
 ```bash
-# 1. 인프라 실행 (PostgreSQL + pgvector)
-docker-compose up -d
+# 모든 워크스페이스 멤버와 개발 도구를 한 번에 설치
+uv sync --all-packages
+```
 
-# 2. 문서 수집 (로컬 data_sources에 마운트)
-uv run --project crawler python crawler/orm_cookbook.py
+## 🚦 시작하기 (Getting Started)
+
+현재 지식 베이스 구축(Django Server) 단계가 완료되어 로컬에서 문서 적재 및 검색 테스트가 가능합니다.
+
+### 1. 인프라 실행 (PostgreSQL + pgvector)
+```bash
+docker-compose up -d db
+```
+
+### 2. Django Server 초기화 및 실행
+특정 서비스(예: Django Server)만 독립적으로 실행하거나 Docker 빌드 시에는 해당 디렉토리에서 `uv sync`를 실행하면 필요한 최소 패키지만 설치됩니다.
+
+```bash
+cd django_server
+uv sync
+uv run python src/manage.py migrate
+```
 
 # 3. 데이터 적재 및 임베딩 (Django Command)
-python django_server/manage.py ingest_docs
+# 예: data_sources/django2-orm-cookbook 폴더 내의 마크다운 파일을 적재
+uv run python src/manage.py ingest_docs ../data_sources/django2-orm-cookbook/ --doc-version 2.2 --category Reference
 
-# 4. MCP 서버 실행 (AI 에이전트 연결용)
-mcp dev mcp_server/main.py
+# 4. 검색 실험실(Playground) 실행
+```bash
+uv run python src/manage.py runserver
 ```
+- **Playground 접속**: `http://127.0.0.1:8000/playground/`
+- **관리자 화면(Admin)**: `http://127.0.0.1:8000/admin/` (적재된 데이터 직접 관리)
+
+> 💡 **주의**: 첫 실행 시 `BAAI/bge-m3` 임베딩 모델(약 2.3GB)을 자동으로 다운로드합니다. 안정적인 네트워크 환경에서 실행하십시오.
+```
+
+## 📅 로드맵 및 진행 현황
+
+- [x] **Phase 1: 인프라 및 기반 설계** (DB 스키마, 임베딩 모델 선정)
+- [x] **Phase 2: Django Server (Ingestion)**
+    - [x] pgvector 기반 텍스트 청킹 및 임베딩 파이프라인
+    - [x] 마크다운 문서 자동 적재 CLI (`ingest_docs`)
+    - [x] 검색 품질 테스트용 웹 UI (Playground)
+- [ ] **Phase 3: MCP Server (Serving)**
+    - [ ] FastMCP 기반 서버 골격 구축
+    - [ ] 벡터 검색 도구(Tool) 및 문서 리소스(Resource) 구현
+- [ ] **Phase 4: 문서 확장 및 고도화**
+    - [ ] Django 공식 문서 전체 크롤링 및 적재
+    - [ ] 다국어 질의 성능 최적화 (bge-m3 튜닝)
+
 
 ### 🚨 트러블슈팅 (Troubleshooting)
 - **네트워크 타임아웃 & 429 Too Many Requests:** 크롤러는 `tenacity`를 활용해 자동으로 지수 백오프 기반 재시도를 수행합니다. 오류 발생 시 강제로 중단하지 말고 대기하세요.

@@ -1,0 +1,33 @@
+{% extends "playground/base.html" %}
+
+{% block content %}
+<div class="search-form">
+    <form hx-get="{% url 'documents:search_results' %}" hx-target="#results" hx-indicator="#loading">
+        <input type="text" name="q" value="{{ request.GET.q }}" placeholder="자연어로 질문하세요 (예: Django에서 모델 정의하는 법)" style="width: 60%;" required>
+
+        <select name="version">
+            <option value="All">All Versions</option>
+            {% for v in versions %}
+                <option value="{{ v }}" {% if request.GET.version == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+        </select>
+
+        <select name="category">
+            <option value="All">All Categories</option>
+            {% for c in categories %}
+                <option value="{{ c }}" {% if request.GET.category == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+
+        <button type="submit">검색</button>
+    </form>
+</div>
+
+<div id="loading" class="htmx-indicator" style="display: none; margin-bottom: 20px;">
+    검색 중... (벡터 임베딩 및 유사도 계산 중)
+</div>
+
+<div id="results" class="results-container" {% if request.GET.q %}hx-get="{% url 'documents:search_results' %}?q={{ request.GET.q|urlencode }}&version={{ request.GET.version|urlencode }}&category={{ request.GET.category|urlencode }}" hx-trigger="load"{% endif %}>
+    <p>검색어를 입력하고 버튼을 누르세요.</p>
+</div>
+{% endblock %}
