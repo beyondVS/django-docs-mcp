@@ -327,5 +327,12 @@ cython_debug/
 # Data directories
 data_sources/
 
-.gemini/
+# Gemini
+.gemini/**
+!.gemini/skills/
+!.gemini/skills/**
+!.gemini/commands/
+!.gemini/commands/**
+
+# github actions
 gha-creds-*.json

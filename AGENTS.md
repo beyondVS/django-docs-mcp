@@ -32,6 +32,7 @@
 
 특정 역할을 부여받거나 해당 영역의 작업을 수행할 경우, 반드시 아래 경로의 개별 지침(Persona)을 우선적으로 읽고 따라야 합니다.
 
+*   **@ProductAnalyst**: [요구사항 분석](.gemini/skills/product-analyst/SKILL.md)
 *   **@Architect**: [설계 및 기술 판단](.gemini/skills/architect/SKILL.md)
 *   **@FrontendDev**: [화면 및 클라이언트 구현](.gemini/skills/frontend-dev/SKILL.md)
 *   **@BackendDev**: [API 및 서버 로직 구현](.gemini/skills/backend-dev/SKILL.md)
@@ -39,4 +40,5 @@
 *   **@DevOps**: [인프라 및 배포](.gemini/skills/devops/SKILL.md)
 *   **@SecurityAuditor**: [보안 감사](.gemini/skills/security-auditor/SKILL.md)
 *   **@QAEngineer**: [테스트 및 품질 보증](.gemini/skills/qa-engineer/SKILL.md)
+*   **@CodeReviewer**: [코드 리뷰](.gemini/skills/code-reviewer/SKILL.md)
 *   **@TechWriter**: [문서화](.gemini/skills/tech-writer/SKILL.md)
