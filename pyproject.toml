@@ -115,3 +115,13 @@ ignore_errors = true
 # ==============================================================================
 [tool.django-stubs]
 django_settings_module = "django_server.settings"
+
+# ==============================================================================
+# Pytest Configuration
+# ==============================================================================
+[tool.pytest.ini_options]
+pythonpath = [
+    "crawler",
+    "django_server",
+    "mcp_server"
+]
