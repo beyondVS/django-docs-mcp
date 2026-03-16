@@ -75,11 +75,16 @@ uv run python src/manage.py migrate
 
 # 3. 데이터 적재 및 임베딩 (Django Command)
 # 예: data_sources/django2-orm-cookbook 폴더 내의 마크다운 파일을 적재
-uv run python src/manage.py ingest_docs ../data_sources/django2-orm-cookbook/ --doc-version 4.2 --category Reference
+uv run python src/manage.py ingest_docs ../data_sources/django2-orm-cookbook/ --doc-version 2.2 --category Reference
 
 # 4. 검색 실험실(Playground) 실행
+```bash
 uv run python src/manage.py runserver
-# 접속: http://127.0.0.1:8000/playground/
+```
+- **Playground 접속**: `http://127.0.0.1:8000/playground/`
+- **관리자 화면(Admin)**: `http://127.0.0.1:8000/admin/` (적재된 데이터 직접 관리)
+
+> 💡 **주의**: 첫 실행 시 `BAAI/bge-m3` 임베딩 모델(약 2.3GB)을 자동으로 다운로드합니다. 안정적인 네트워크 환경에서 실행하십시오.
 ```
 
 ## 📅 로드맵 및 진행 현황

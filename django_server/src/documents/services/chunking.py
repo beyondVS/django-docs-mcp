@@ -11,13 +11,13 @@ class ChunkingService:
     코드 블록을 최대한 보존하면서 지정된 크기로 문서를 분할합니다.
     """
 
-    def __init__(self, chunk_size: int = 800, chunk_overlap: int = 80):
+    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 100):
         """
         ChunkingService를 초기화합니다.
 
         Args:
-            chunk_size (int): 개별 청크의 최대 문자 길이. 기본값 800.
-            chunk_overlap (int): 청크 간 중첩되는 문자 길이. 기본값 80.
+            chunk_size (int): 개별 청크의 최대 문자 길이. 기본값 1000.
+            chunk_overlap (int): 청크 간 중첩되는 문자 길이. 기본값 100.
         """
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap

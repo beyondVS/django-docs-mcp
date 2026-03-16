@@ -122,7 +122,20 @@ class ChunkAdmin(admin.ModelAdmin):
     )
     list_filter = ("section__document__target_version", "section__document__category")
     search_fields = ("content", "section__title", "section__document__title")
-    readonly_fields = ("id", "created_at", "embedding")
+    readonly_fields = ("id", "created_at", "display_embedding")
+
+    @admin.display(description="임베딩 벡터 (1024차원)")
+    def display_embedding(self, obj: Chunk) -> str:
+        """
+        Numpy 배열인 임베딩 벡터를 Admin에서 안전하게 표시하기 위한 메서드.
+        앞부분 일부만 보여주어 가독성을 높입니다.
+        """
+        if obj.embedding is None:
+            return "-"
+        # Numpy 배열일 경우를 대비해 리스트 변환 후 앞 5개 요소만 출력
+        vec = list(obj.embedding)
+        preview = ", ".join([f"{x:.4f}" for x in vec[:5]])
+        return f"[{preview}, ... ({len(vec)} dims)]"
 
     @admin.display(description="섹션 제목")
     def section_title(self, obj: Chunk) -> str:
