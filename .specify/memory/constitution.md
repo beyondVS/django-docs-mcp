@@ -15,7 +15,7 @@ Sync Impact Report:
 AI 에이전트가 환각(Hallucination) 없이 Django 공식 가이드와 코드를 정확히 검색할 수 있도록 지원하는 RAG(검색 증강 생성) 기반 지식 통합 MCP(Model Context Protocol) 서버 구축 프로젝트.
 
 ## I. 핵심 철학 (Core Philosophy)
-1. **실용주의 (Pragmatism)**: Over-engineering을 엄격히 금지합니다. 복잡도를 비용으로 간주하여 가장 단순하고 명확한 해결책을 우선합니다.
+1. **실용주의 (Pragmatism)**: Over-engineering을 엄격히 금지하며 가장 단순하고 명확한 해결책을 우선합니다. 단, 단순함이 구조적 안정성, 패키징 정합성, 장기적인 유지보수성이라는 엔지니어링 표준을 훼손해서는 안 됩니다. (예: 단순 도구는 Flat 구조를 지향하되, 복잡한 서버 프로젝트는 정석적인 레이아웃을 채택함)
 2. **한국어 최우선 (Language First)**: 모든 대화, 문서, 커밋 메시지는 한국어를 사용합니다. 단, 변수명/클래스명 등 코드 식별자는 영어를 사용합니다.
 
 ## II. 아키텍처 원칙 (Architectural Principles)
