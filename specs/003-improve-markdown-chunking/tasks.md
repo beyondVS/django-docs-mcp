@@ -25,9 +25,9 @@
 - [ ] T007 [US1] `django_server/tests/test_chunking.py`에서 각 청크가 올바른 `Header 1~3` 메타데이터와 `header_context`를 포함하는지 검증
 
 ### 4단계: [US2] 코드 블록 무결성 보장 (P1)
-- [ ] T008 [US2] `MarkdownTextSplitter`의 `separators` 설정을 조정하여 코드 블록(```)이 중간에 잘리지 않도록 최적화
+- [ ] T008 [US2] MarkdownTextSplitter의 separators 설정을 조정하여 코드 블록 기호(\n```\n)를 최우선 구분자로 인식하게 함으로써 내부 절단을 방지
 - [ ] T009 [US2] `django_server/src/documents/services/chunking.py`에서 분할된 결과물 중 코드 블록이 닫히지 않은 경우를 탐지하는 유효성 검사 로직(Sanity Check) 추가
-- [ ] T010 [US2] `django_server/tests/test_chunking.py`에서 긴 코드 블록이 여러 청크로 나뉘더라도 문법적으로 유효한지 검증하는 테스트 수행
+- [ ] T010 [US2] django_server/tests/test_chunking.py에서 코드 블록 내부의 줄바꿈으로 인한 강제 분할이 발생하지 않는지, 그리고 분할 시 문법적 유효성을 유지하는지 검증
 
 ### 5단계: [US3] 임베딩 최적화 및 크기 조절 (P2)
 - [ ] T011 [US3] `ChunkingService`의 기본 `chunk_size`를 2500자로 상향 조정하고 bge-m3 모델과의 호환성 확인
