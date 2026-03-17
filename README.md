@@ -12,8 +12,15 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 
 시스템의 무결성과 확장성을 위해 **데이터 적재(Ingestion)** 파트와 **데이터 제공(Serving)** 파트를 분리하여 설계했습니다.
 
-1. **지식 베이스 구축 (Django Server):** 크롤링된 문서 파일들을 청킹(Chunking)하여 임베딩한 뒤, 벡터 데이터베이스(PostgreSQL + pgvector)에 적재합니다. 관리자는 내장된 웹 UI(Playground)를 통해 검색 품질을 시각적으로 테스트하고 튜닝할 수 있습니다.
+1. **지식 베이스 구축 (Django Server):** 크롤링된 마크다운 문서를 **2단계 논리적 청킹(Semantic Chunking)** 전략을 통해 헤더 구조와 코드 블록 무결성을 보존하며 임베딩합니다. 벡터 데이터베이스(PostgreSQL + pgvector)에 적재된 데이터는 관리자 웹 UI(Playground)를 통해 검색 품질을 시각적으로 테스트하고 튜닝할 수 있습니다.
 2. **AI 에이전트 연동 (MCP Server):** AI 에이전트는 FastMCP 기반 서버에 질의를 보냅니다. 서버는 HNSW 인덱스를 활용해 고속으로 관련 문서 청크를 검색하고 응답하여, AI가 문맥을 잃지 않도록 돕습니다.
+
+## ✨ 주요 특징 (Key Features)
+
+* **의미론적 2단계 청킹**: `MarkdownHeaderTextSplitter`로 문서 구조(H1~H3)를 파싱하고, `MarkdownTextSplitter`로 코드 블록을 보호하며 재분할하는 정교한 파이프라인을 제공합니다.
+* **코드 블록 무결성 보장**: `bge-m3` 모델의 넓은 컨텍스트(8,192 토큰)를 활용하여, 긴 파이썬 예제 코드도 잘림 없이 온전한 형태로 검색 결과에 제공합니다.
+* **데이터 순수성 유지**: 청크 본문에 인위적인 컨텍스트 정보를 주입하지 않고 순수 마크다운만 유지함으로써 임베딩 품질을 높이고 데이터 원본성을 확보했습니다.
+* **bge-m3 최적화**: 다국어 및 장문에 특화된 모델 특성에 맞춰 2,500자 단위의 최적화된 청크 사이즈를 적용했습니다.
 
 ## 🛠 기술 스택 (What)
 
@@ -75,7 +82,7 @@ uv run python src/manage.py migrate
 
 # 3. 데이터 적재 및 임베딩 (Django Command)
 # 예: data_sources/django2-orm-cookbook 폴더 내의 마크다운 파일을 적재
-uv run python src/manage.py ingest_docs ../data_sources/django2-orm-cookbook/ --doc-version 2.2 --category Reference
+uv run python src/manage.py ingest_docs ../data_sources/django2-orm-cookbook/ --doc-version 2.2 --category Cookbook
 
 # 4. 검색 실험실(Playground) 실행
 ```bash
@@ -92,6 +99,7 @@ uv run python src/manage.py runserver
 - [x] **Phase 1: 인프라 및 기반 설계** (DB 스키마, 임베딩 모델 선정)
 - [x] **Phase 2: Django Server (Ingestion)**
     - [x] pgvector 기반 텍스트 청킹 및 임베딩 파이프라인
+    - [x] 의미론적 2단계 청킹 및 코드 블록 보호 전략 적용
     - [x] 마크다운 문서 자동 적재 CLI (`ingest_docs`)
     - [x] 검색 품질 테스트용 웹 UI (Playground)
 - [ ] **Phase 3: MCP Server (Serving)**

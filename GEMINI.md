@@ -1,6 +1,4 @@
-﻿# Gemini CLI Project Context
-
-이 파일은 `gemini-cli`가 작업을 시작하기 위한 초기 진입점(Entry Point)입니다.
+﻿# Gemini Context
 
 ## 1. 전역 지침 참조 (필수)
 작업 시작 전, 다음 공통 문서들을 반드시 읽고 컨텍스트를 확보하십시오.
