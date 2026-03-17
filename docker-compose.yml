@@ -1,8 +1,6 @@
 services:
   db:
-    build:
-      context: ./django_server
-      dockerfile: db.Dockerfile
+    image: paradedb/paradedb:latest-pg18
     ports:
       - "5432:5432"
     environment:
