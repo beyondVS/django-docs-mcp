@@ -12,33 +12,33 @@
 ## 구현 단계 (Phases)
 
 ### 1단계: 설정 및 인프라 구축 (Setup)
-- [ ] T001 `django_server/db.Dockerfile`을 생성하여 `pgvector/pgvector:pg18` 기반에 `pg_search` 확장 설치 로직 구현
-- [ ] T002 `docker-compose.yml`의 `db` 서비스를 커스텀 Dockerfile 빌드 방식으로 업데이트
-- [ ] T003 `django_server` 디렉토리에서 `uv add "optimum[onnxruntime]~=1.24.0" "transformers~=4.48.0"` 실행 및 `pyproject.toml` 버전 기법(`~=`) 조정
-- [ ] T004 [P] `django_server/src/documents/migrations/`에 `pg_search` 확장을 활성화하고 `documents_chunk` 테이블에 BM25 인덱스를 생성하는 `RunSQL` 마이그레이션 작성
+- [x] T001 `django_server/db.Dockerfile`을 생성하여 `pgvector/pgvector:pg18` 기반에 `pg_search` 확장 설치 로직 구현
+- [x] T002 `docker-compose.yml`의 `db` 서비스를 커스텀 Dockerfile 빌드 방식으로 업데이트
+- [x] T003 `django_server` 디렉토리에서 `uv add "optimum[onnxruntime]~=1.24.0" "transformers~=4.48.0"` 실행 및 `pyproject.toml` 버전 기법(`~=`) 조정
+- [x] T004 [P] `django_server/src/documents/migrations/`에 `pg_search` 확장을 활성화하고 `documents_chunk` 테이블에 BM25 인덱스를 생성하는 `RunSQL` 마이그레이션 작성
 
 ### 2단계: 기초 로직 리팩토링 (Foundational)
-- [ ] T005 `django_server/src/documents/services/embedding.py`를 `SentenceTransformers` 대신 `optimum` 및 `onnxruntime` 기반의 `bge-m3` 임베딩 생성 로직으로 전환
-- [ ] T006 `django_server/src/documents/services/search.py`의 기존 `vector_search` 로직을 하이브리드 검색 확장이 용이하도록 인터페이스 리팩토링
+- [x] T005 `django_server/src/documents/services/embedding.py`를 `SentenceTransformers` 대신 `optimum` 및 `onnxruntime` 기반의 `bge-m3` 임베딩 생성 로직으로 전환
+- [x] T006 `django_server/src/documents/services/search.py`의 기존 `vector_search` 로직을 하이브리드 검색 확장이 용이하도록 인터페이스 리팩토링
 
 ### 3단계: [US1] 하이브리드 검색 엔진 구축 (P1)
-- [ ] T007 [US1] `django_server/src/documents/services/search.py`에 `pg_search`를 활용한 BM25 검색 메서드 구현 (단문 및 불용어 필터링 로직 포함)
-- [ ] T008 [US1] `django_server/src/documents/services/search.py`에 SQL `WITH` 절 및 `FULL OUTER JOIN`을 사용한 RRF(Reciprocal Rank Fusion) 통합 쿼리 구현
-- [ ] T009 [P] [US1] `django_server/tests/test_search.py`에 하이브리드 검색 결과의 키워드 매칭 정확도를 검증하는 단위 테스트 추가
-- [ ] T010 [US1] `django_server/src/documents/services/search.py`의 `hybrid_search` 결과를 기존 `search_django_knowledge` 규격에 맞게 변환하는 래퍼 작성
+- [x] T007 [US1] `django_server/src/documents/services/search.py`에 `pg_search`를 활용한 BM25 검색 메서드 구현 (단문 및 불용어 필터링 로직 포함)
+- [x] T008 [US1] `django_server/src/documents/services/search.py`에 SQL `WITH` 절 및 `FULL OUTER JOIN`을 사용한 RRF(Reciprocal Rank Fusion) 통합 쿼리 구현
+- [x] T009 [P] [US1] `django_server/tests/test_search.py`에 하이브리드 검색 결과의 키워드 매칭 정확도를 검증하는 단위 테스트 추가
+- [x] T010 [US1] `django_server/src/documents/services/search.py`의 `hybrid_search` 결과를 기존 `search_django_knowledge` 규격에 맞게 변환하는 래퍼 작성
 
 ### 4단계: [US2] Rerank 프로세서 구현 (P1)
-- [ ] T011 [US2] `django_server/src/documents/services/reranking.py` 신설 및 `optimum` 기반의 `bge-reranker-v2-m3-onnx-int8` 모델 로드 로직 구현 (Hugging Face 자동 다운로드 활용)
-- [ ] T012 [US2] `RerankingService.rerank` 메서드에서 [질문, 청크] 쌍에 대한 유사도 점수 산출 및 Sigmoid 적용 로직 구현
-- [ ] T013 [US2] `django_server/src/documents/services/search.py`에서 하이브리드 검색 결과 상위 20개를 Reranker에 전달하고 최종 순위를 정렬하는 파이프라인 연결
-- [ ] T014 [P] [US2] `django_server/tests/test_search.py`에 Rerank 후 검색 결과의 정밀도 향상을 검증하는 테스트 케이스 추가
+- [x] T011 [US2] `django_server/src/documents/services/reranking.py` 신설 및 `optimum` 기반의 `bge-reranker-v2-m3-onnx-int8` 모델 로드 로직 구현 (Hugging Face 자동 다운로드 활용)
+- [x] T012 [US2] `RerankingService.rerank` 메서드에서 [질문, 청크] 쌍에 대한 유사도 점수 산출 및 Sigmoid 적용 로직 구현
+- [x] T013 [US2] `django_server/src/documents/services/search.py`에서 하이브리드 검색 결과 상위 20개를 Reranker에 전달하고 최종 순위를 정렬하는 파이프라인 연결
+- [x] T014 [P] [US2] `django_server/tests/test_search.py`에 Rerank 후 검색 결과의 정밀도 향상을 검증하는 테스트 케이스 추가
 
 ### 5단계: [US3] 품질 평가 (P2)
-- [ ] T015 [US3] LLM(Gemini 등)을 활용하여 크롤링된 문서 기반의 질문-정답 쌍을 자동 생성하고, 수동 검수를 통해 50개 이상의 고품질 골든 데이터셋(`evaluate_search.py` 내장) 구축
-- [ ] T016 [US3] evaluate_search.py에서 MRR, Hit Rate 계산 및 질문과 무관한 문서가 Top-5에 포함되는 '허위 양성' 비율 분석 기능 구현
+- [x] T015 [US3] LLM(Gemini 등)을 활용하여 크롤링된 문서 기반의 질문-정답 쌍을 자동 생성하고, 수동 검수를 통해 50개 이상의 고품질 골든 데이터셋(`evaluate_search.py` 내장) 구축
+- [x] T016 [US3] evaluate_search.py에서 MRR, Hit Rate 계산 및 질문과 무관한 문서가 Top-5에 포함되는 '허위 양성' 비율 분석 기능 구현
 
 ### 6단계: 다듬기 및 통합 (Polish)
-- [ ] T017 `django_server/src/documents/templates/playground/` 웹 UI에서 하이브리드/Rerank 점수를 시각적으로 확인할 수 있도록 업데이트
+- [x] T017 `django_server/src/documents/templates/playground/` 웹 UI에서 하이브리드/Rerank 점수를 시각적으로 확인할 수 있도록 업데이트
 
 ## 의존성 및 실행 순서
 1. **인프라 (T001-T004)**: DB 확장이 설치되어야 모든 검색 로직 테스트가 가능함.

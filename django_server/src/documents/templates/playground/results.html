@@ -7,7 +7,13 @@
                     <strong>{{ result.document_title }}</strong> |
                     <span>{{ result.section_title }}</span> |
                     <span>Version: {{ result.version }}</span> |
-                    <span class="similarity-score">Similarity: {{ result.similarity }}</span>
+                    <span class="similarity-score">Relevance: {{ result.similarity }}</span>
+                    {% if result.extra_meta.rrf_score %}
+                        <small>(RRF: {{ result.extra_meta.rrf_score|floatformat:4 }})</small>
+                    {% endif %}
+                    {% if result.extra_meta.rerank_score %}
+                        <small>(Rerank: {{ result.extra_meta.rerank_score|floatformat:4 }})</small>
+                    {% endif %}
                 </div>
                 <div class="content">{{ result.content }}</div>
             </div>

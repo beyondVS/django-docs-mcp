@@ -91,6 +91,9 @@ class Chunk(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name="chunks")
     content = models.TextField(help_text="분할된 텍스트 본문")
+    section_title = models.CharField(
+        max_length=512, blank=True, help_text="검색 성능 향상을 위한 섹션 제목 데이타 (비정규화)"
+    )
     embedding = VectorField(dimensions=1024, help_text="BGE-M3 1024차원 벡터 임베딩")
     token_count = models.IntegerField(help_text="대략적인 토큰 수")
     overlap_index = models.IntegerField(default=0, help_text="중첩 분할 시의 인덱스")

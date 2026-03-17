@@ -1,6 +1,8 @@
 services:
   db:
-    image: pgvector/pgvector:pg16
+    build:
+      context: ./django_server
+      dockerfile: db.Dockerfile
     ports:
       - "5432:5432"
     environment:

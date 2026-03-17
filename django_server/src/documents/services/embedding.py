@@ -1,19 +1,21 @@
 from typing import Any
 
 import torch
-from sentence_transformers import SentenceTransformer
+from optimum.onnxruntime import ORTModelForFeatureExtraction
+from transformers import AutoTokenizer
 
 
 class EmbeddingService:
     """
     텍스트 데이터를 벡터 임베딩으로 변환하는 싱글톤 서비스 클래스.
 
-    BAAI/bge-m3 모델을 사용하여 1024차원의 밀집 벡터를 생성합니다.
-    GPU 사용이 가능할 경우 자동으로 CUDA 가속을 활용합니다.
+    optimum 및 onnxruntime을 사용하여 BAAI/bge-m3 모델의 ONNX 버전을 실행합니다.
+    CPU 환경에서의 메모리 효율과 추론 속도를 최적화합니다.
     """
 
     _instance: EmbeddingService | None = None
-    _model: SentenceTransformer | None = None
+    _model: ORTModelForFeatureExtraction | None = None
+    _tokenizer: Any = None
 
     def __new__(cls) -> EmbeddingService:
         """
@@ -25,11 +27,16 @@ class EmbeddingService:
         if cls._instance is None:
             instance = super().__new__(cls)
             cls._instance = instance
-            # 모델은 한 번만 로드함
             model_name = "BAAI/bge-m3"
-            # GPU 사용 가능 여부에 따라 디바이스 설정
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-            cls._model = SentenceTransformer(model_name, device=device)
+
+            # 1. 토크나이저 로드 (Hugging Face 자동 다운로드 활용)
+            cls._tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+            # 2. ONNX 모델 로드 (Hugging Face 리포지토리의 onnx/ 서브폴더에서 자동 로드)
+            # 프로젝트 헌법 및 기술 표준에 따라 CPU 환경 최적화를 위해 ONNX Runtime 사용
+            cls._model = ORTModelForFeatureExtraction.from_pretrained(
+                model_name, subfolder="onnx", provider="CPUExecutionProvider"
+            )
         return cls._instance
 
     def embed_text(self, text: str) -> list[float]:
@@ -42,11 +49,7 @@ class EmbeddingService:
         Returns:
             list[float]: 생성된 벡터 임베딩 리스트 (L2 정규화 포함).
         """
-        model = self._get_model()
-
-        # 정규화: bge-m3 모델은 일반적으로 정규화 시 성능이 향상됨
-        embedding: Any = model.encode(text, normalize_embeddings=True)
-        return [float(x) for x in embedding.tolist()]
+        return self.embed_batch([text])[0]
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
         """
@@ -58,25 +61,29 @@ class EmbeddingService:
         Returns:
             list[list[float]]: 생성된 벡터 임베딩 리스트의 리스트.
         """
-        model = self._get_model()
+        tokenizer = self._tokenizer
+        model = self._model
 
-        embeddings: Any = model.encode(texts, normalize_embeddings=True)
-        return [[float(x) for x in e.tolist()] for e in embeddings]
+        if model is None or tokenizer is None:
+            raise RuntimeError("모델 또는 토크나이저가 로드되지 않았습니다.")
 
-    def _get_model(self) -> SentenceTransformer:
-        """
-        로드된 모델을 반환하거나, 로드되지 않았을 경우 에러를 발생시킵니다.
-        """
-        if self._model is not None:
-            return self._model
+        # 1. 토큰화
+        encoded_input = tokenizer(
+            texts, padding=True, truncation=True, max_length=8192, return_tensors="pt"
+        )
 
-        # 싱글톤 구조상 발생하기 어렵지만 mypy 대응을 위해 추가
-        model_name = "BAAI/bge-m3"
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        model = SentenceTransformer(model_name, device=device)
-        self.__class__._model = model
+        # 2. ONNX 추론
+        with torch.no_grad():
+            model_output = model(**encoded_input)
 
-        return model
+        # 3. Pooling (BGE-M3는 일반적으로 [CLS] 토큰 활용)
+        # last_hidden_state의 0번 인덱스 (Batch, Sequence, Hidden) -> (Batch, Hidden)
+        sentence_embeddings = model_output.last_hidden_state[:, 0, :]
+
+        # 4. L2 Normalization
+        sentence_embeddings = torch.nn.functional.normalize(sentence_embeddings, p=2, dim=1)
+
+        return [[float(x) for x in e] for e in sentence_embeddings.tolist()]
 
 
 def get_embedding_service() -> EmbeddingService:
