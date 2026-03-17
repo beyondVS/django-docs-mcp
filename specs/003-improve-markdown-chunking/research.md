@@ -13,6 +13,7 @@
 ### 3. 코드 블록 보호 메커니즘
 - **선택**: `MarkdownTextSplitter`의 기본 구분자(Separators) 활용 및 적정 `chunk_size` 설정.
 - **근거**: `MarkdownTextSplitter`는 코드 블록 시작/종료 기호(`\n```\n`)를 분할 지점으로 인식하도록 설계되어 있어, 일반 `RecursiveCharacterTextSplitter`보다 코드 블록 내부 절단 확률이 현저히 낮습니다.
+- **예외 정책 (헌법 II-4 준수)**: 단일 코드 블록이 2,500자를 초과하더라도 bge-m3의 최대 토큰(8,192) 이내라면 분할하지 않고 하나의 청크로 보존하여 코드의 무결성을 절대적으로 유지합니다.
 
 ## 고려된 대안 (Alternatives Considered)
 
