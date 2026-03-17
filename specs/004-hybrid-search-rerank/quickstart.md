@@ -12,10 +12,12 @@ CREATE EXTENSION IF NOT EXISTS pg_search;
 ```
 
 ### 2. 의존성 설치
-새로운 최적화 라이브러리를 설치합니다.
+프로젝트 루트 또는 `django_server` 디렉토리에서 패키지를 추가합니다.
 ```bash
-uv pip install onnxruntime transformers
+cd django_server
+uv add optimum[onnxruntime] transformers
 ```
+> 💡 **Tip**: 설치 후 `pyproject.toml`을 열어 자동으로 생성된 버전 표기를 `~= x.y.z` 형식으로 수정하여 API 안정성을 확보하십시오.
 
 ### 3. 모델 다운로드
 검색 엔진 구동 시 자동으로 다운로드되거나, 명시적으로 미리 다운로드할 수 있습니다.

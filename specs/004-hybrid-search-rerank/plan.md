@@ -9,8 +9,8 @@ PostgreSQL의 `pg_search` 확장을 도입하여 BM25 키워드 검색을 구현
 ## 기술적 문맥 (Technical Context)
 
 **언어/버전**: Python 3.14
-**주요 의존성**: `onnxruntime`, `transformers`, `pg_search` (ParadeDB), `pgvector`
-**저장소**: PostgreSQL (ParadeDB 이미지로 업그레이드 고려)
+**주요 의존성**: `optimum[onnxruntime]~=1.24.0`, `transformers~=4.48.0`, `pg_search` (ParadeDB), `pgvector`
+**저장소**: PostgreSQL (pgvector:pg18 베이스 커스텀 이미지)
 **테스트**: `pytest` (신규 평가 데이터셋 포함)
 **대상 플랫폼**: Linux 서버 (Docker)
 **성능 목표**: 검색 및 Rerank 통합 응답 시간 1.5초 이내 (p95)
@@ -44,7 +44,7 @@ django_server/
 1. **DB Dockerfile 작성**: `pgvector/pgvector:pg18`을 베이스로 하고 `pg_search` 패키지 저장소 설정 및 확장을 설치하는 `Dockerfile` 생성.
 2. **docker-compose 수정**: `image` 대신 `build` 설정을 사용하도록 업데이트하여 커스텀 이미지를 적용.
 3. **BM25 인덱스 생성**: 마이그레이션을 통해 `documents_chunk` 테이블에 BM25 인덱스 추가.
-4. **의존성 설치**: `onnxruntime`, `transformers` 패키지 추가.
+4. **의존성 추가**: `django_server` 프로젝트에 `uv add optimum[onnxruntime] transformers` 실행 후 `pyproject.toml` 버전을 `~=` 형식으로 조정.
 
 ### 1단계: 하이브리드 검색 구현 (Retrieval)
 1. **SearchService 리팩토링**: 벡터 검색과 BM25 검색을 병렬로 수행하는 SQL 작성.
