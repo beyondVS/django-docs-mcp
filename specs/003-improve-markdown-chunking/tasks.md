@@ -12,30 +12,30 @@
 ## 구현 단계 (Phases)
 
 ### 1단계: 설정 및 환경 준비 (Setup)
-- [ ] T001 `django_server` 내 `langchain-text-splitters` 패키지 설치 여부 최종 확인 및 환경 동기화
-- [ ] T002 `django_server/src/documents/services/chunking.py` 파일의 기존 구현 내용을 참조용으로 백업 또는 Git 브랜치 상태 확인
+- [x] T001 `django_server` 내 `langchain-text-splitters` 패키지 설치 여부 최종 확인 및 환경 동기화
+- [x] T002 `django_server/src/documents/services/chunking.py` 파일의 기존 구현 내용을 참조용으로 백업 또는 Git 브랜치 상태 확인
 
 ### 2단계: 기초 테스트 및 유틸리티 (Foundational)
-- [ ] T003 [P] `django_server/tests/test_chunking.py` 파일을 생성하고 기본 마크다운 분할 테스트 케이스 작성
-- [ ] T004 [P] 코드 블록이 포함된 3000자 이상의 테스트용 마크다운 샘플 데이터를 `django_server/tests/samples/large_code_block.md`에 생성
+- [x] T003 [P] `django_server/tests/test_chunking.py` 파일을 생성하고 기본 마크다운 분할 테스트 케이스 작성
+- [x] T004 [P] 코드 블록이 포함된 3000자 이상의 테스트용 마크다운 샘플 데이터를 `django_server/tests/samples/large_code_block.md`에 생성
 
 ### 3. [US1] 문서 논리 구조 및 문맥 보존 (P1)
-- [ ] T005 [US1] `django_server/src/documents/services/chunking.py`의 `ChunkingService.__init__`에서 설계 엔티티인 `ChunkPipeline` 논리를 반영하여 스플리터 초기화
-- [ ] T006 [US1] `ChunkingService.split_markdown`에서 1단계와 2단계를 연결하고, 결과물인 `EnhancedDocument`를 기존 인터페이스(dict)로 변환하는 래퍼 구현
-- [ ] T007 [US1] `django_server/tests/test_chunking.py`에서 각 청크가 올바른 `Header 1~3` 메타데이터와 `header_context`를 포함하는지 검증
+- [x] T005 [US1] `django_server/src/documents/services/chunking.py`의 `ChunkingService.__init__`에서 설계 엔티티인 `ChunkPipeline` 논리를 반영하여 스플리터 초기화
+- [x] T006 [US1] `ChunkingService.split_markdown`에서 1단계와 2단계를 연결하고, 결과물인 `EnhancedDocument`를 기존 인터페이스(dict)로 변환하는 래퍼 구현
+- [x] T007 [US1] `django_server/tests/test_chunking.py`에서 각 청크가 올바른 `Header 1~3` 메타데이터와 `header_context`를 포함하는지 검증
 
 ### 4단계: [US2] 코드 블록 무결성 보장 (P1)
-- [ ] T008 [US2] MarkdownTextSplitter의 separators 설정을 조정하여 코드 블록 기호(\n```\n)를 최우선 구분자로 인식하게 함으로써 내부 절단을 방지
-- [ ] T009 [US2] 코드 블록이 2,500자를 초과하더라도 bge-m3 토큰 한도 이내라면 분할하지 않고 '통째 보존'하는 예외 처리 로직 구현 (헌법 II-4 준수)
-- [ ] T010 [US2] django_server/tests/test_chunking.py에서 코드 블록 내부의 줄바꿈으로 인한 강제 분할이 발생하지 않는지, 그리고 분할 시 문법적 유효성을 유지하는지 검증
+- [x] T008 [US2] MarkdownTextSplitter의 separators 설정을 조정하여 코드 블록 기호(\n```\n)를 최우선 구분자로 인식하게 함으로써 내부 절단을 방지
+- [x] T009 [US2] 코드 블록이 2,500자를 초과하더라도 bge-m3 토큰 한도 이내라면 분할하지 않고 '통째 보존'하는 예외 처리 로직 구현 (헌법 II-4 준수)
+- [x] T010 [US2] django_server/tests/test_chunking.py에서 코드 블록 내부의 줄바꿈으로 인한 강제 분할이 발생하지 않는지, 그리고 분할 시 문법적 유효성을 유지하는지 검증
 
 ### 5단계: [US3] 임베딩 최적화 및 크기 조절 (P2)
-- [ ] T011 [US3] 2,500자 청크가 bge-m3 토큰 한도(8,192) 대비 충분한 여유(예: < 1,500 토큰)를 가지는지 토크나이저 등으로 표본 검증
-- [ ] T012 [US3] `django_server/tests/test_chunking.py`에서 모든 최종 청크의 길이가 `chunk_size` 상한을 넘지 않는지 확인 (코드 블록 예외 케이스 제외)
+- [x] T011 [US3] 2,500자 청크가 bge-m3 토큰 한도(8,192) 대비 충분한 여유(예: < 1,500 토큰)를 가지는지 토크나이저 등으로 표본 검증
+- [x] T012 [US3] `django_server/tests/test_chunking.py`에서 모든 최종 청크의 길이가 `chunk_size` 상한을 넘지 않는지 확인 (코드 블록 예외 케이스 제외)
 
 
 ### 6단계: 다듬기 및 통합 검증 (Polish)
-- [ ] T013 `django_server/src/documents/services/chunking.py`에서 기존의 강제 텍스트 주입(Context:, Document:) 로직을 완전히 제거하고 순수 텍스트만 반환하도록 정리
+- [x] T013 `django_server/src/documents/services/chunking.py`에서 기존의 강제 텍스트 주입(Context:, Document:) 로직을 완전히 제거하고 순수 텍스트만 반환하도록 정리
 - [ ] T014 `django_server/tests/test_ingestion.py`를 실행하여 새로운 청킹 전략이 DB 적재(`ingest_docs` 명령)와 정상적으로 통합되는지 최종 확인
 
 ## 의존성 및 실행 순서
