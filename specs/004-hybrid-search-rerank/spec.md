@@ -5,6 +5,13 @@
 **상태**: 초안(Draft)
 **입력**: 사용자 설명: "청크 검색시의 검색 전략 보완. 하이브리드 검색(bm25+벡터) + rerank 전략으로 좀더 양질의 검색 결과를 리턴 한다."
 
+## Clarifications
+
+### Session 2026-03-18
+
+- Q: 하이브리드 검색의 BM25(키워드) 구현 방식은? → A: PostgreSQL의 `pg_search` (ParadeDB) 확장을 사용하여 고성능 BM25 인덱싱을 수행한다.
+- Q: Reranker 모델 선정 및 최적화 전략은? → A: 사전 양자화된 `tss-deposium/bge-reranker-v2-m3-onnx-int8` 모델을 선택하며, CPU 환경 최적화를 위해 임베딩 모델과 Reranker 모두 `ONNX Runtime`을 적용한다.
+
 ## 사용자 시나리오 및 테스트 *(필수)*
 
 ### 사용자 스토리 1 - 용어 기반 검색 정확도 향상 (우선순위: P1)
@@ -67,8 +74,8 @@
 
 ### 시스템 제약 사항 (System Constraints - Django Docs MCP)
 
-- **SYS-001**: 모든 데이터 조회는 `pgvector` 기반의 인프라를 활용하되, BM25를 위한 별도의 텍스트 인덱스(GIST/GIN 등) 또는 유틸리티를 활용할 수 있음.
-- **SYS-002**: Reranker 모델은 가급적 경량화된 모델을 사용하여 추론 속도를 보장해야 함.
+- **SYS-001**: 모든 데이터 조회는 `pgvector` 기반의 인프라를 활용하되, BM25 키워드 검색을 위해 `pg_search` (ParadeDB) 확장을 도입하여 고성능 인덱싱 및 정밀한 점수 산출을 수행해야 함.
+- **SYS-002**: 임베딩 모델(bge-m3)과 Reranker 모델이 검색 시점에 동시에 로드되므로 메모리 효율 및 CPU 추론 속도 최적화가 필수적임. 이를 위해 Reranker는 사전 양자화된 `tss-deposium/bge-reranker-v2-m3-onnx-int8` 모델을 사용하며, 두 모델 모두 `ONNX Runtime`을 적용하여 실행해야 함.
 - **SYS-003**: 전체 검색 프로세스(Retrieval + Rerank)는 헌법의 실용주의 원칙에 따라 과도한 복잡성을 지양해야 함.
 
 ### 주요 엔티티
