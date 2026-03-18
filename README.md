@@ -30,7 +30,7 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 * **Ingestion & Testing:** Django (안정적인 Admin 제공 및 Playground 검색 튜닝 UI)
 * **Models & Runtime:**
     * **Embedding:** `BAAI/bge-m3` (ONNX 기반 가속, 1024차원)
-    * **Reranker:** `BAAI/bge-reranker-base` (ONNX INT8 양자화 모델)
+    * **Reranker:** `keisuke-miyako/bge-reranker-base-onnx-int8` (CPU 최적화 INT8 양자화 모델)
     * **Runtime:** `ONNX Runtime` (CPU 환경 최적화 및 고속 추론)
 * **Infrastructure:** Docker & Docker Compose (격리된 로컬 환경 및 배포 용이성)
 
@@ -53,8 +53,12 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 
 * [프로젝트 기획서](./specs/_architecture/project_proposal.md)
 * [시스템 아키텍처 설계서](./specs/_architecture/architecture_design.md)
+* [기술 스택 선정 근거서](./specs/_architecture/tech_stack_rationale.md)
+* [기술적 배경 및 핵심 개념](./specs/_architecture/technical_background.md)
 * [데이터베이스 스키마 설계](./specs/_architecture/database_schema.md)
 * [임베딩 및 리트리벌 전략](./specs/_architecture/embedding_strategy.md)
+* [검색 품질 평가 프레임워크](./specs/_architecture/evaluation_framework.md)
+* [서비스 연동 아키텍처](./specs/_architecture/serving_architecture.md)
 * [MCP 도구(Tools) 명세](./specs/_architecture/mcp_tools_contract.md)
 
 ## 🛠️ 개발 환경 구축 (Development Setup)

@@ -9,7 +9,7 @@
 * **Ingestion & Testing (Web UI):** Django (하이브리드 검색 및 Rerank 파이프라인 엔진 포함)
 * **Models & Runtime:**
     * **Embedding:** BAAI/bge-m3 (ONNX Runtime 가속, 1024 차원)
-    * **Reranker:** BAAI/bge-reranker-base (ONNX INT8 양자화)
+    * **Reranker:** keisuke-miyako/bge-reranker-base-onnx-int8 (ONNX INT8 양자화)
     * **Runtime:** ONNX Runtime (CPU 환경 최적화)
 * **Infra:** Docker & Docker Compose (ParadeDB 공식 이미지 활용)
 

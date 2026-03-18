@@ -9,7 +9,7 @@ class RerankingService:
     """
     검색 결과의 정밀도를 향상시키기 위해 Reranker 모델을 실행하는 서비스 클래스.
 
-    BAAI/bge-reranker-base의 ONNX 버전을 사용하여
+    keisuke-miyako/bge-reranker-base-onnx-int8 모델을 사용하여
     질문과 문서 청크 간의 관련성 점수를 정밀하게 재산출합니다.
     """
 

@@ -18,7 +18,8 @@ class ChunkingService:
 
         Args:
             chunk_size (int): 개별 청크의 최대 문자 길이.
-                             리랭커(bge-reranker-base, 512토큰)의 한계에 맞춰 1500으로 최적화.
+                             리랭커(keisuke-miyako/...-int8, 512토큰) 한계에 맞춰
+                             1500으로 최적화.
             chunk_overlap (int): 청크 간 중첩되는 문자 길이. 기본값 200.
         """
         self.chunk_size = chunk_size

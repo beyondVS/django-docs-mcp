@@ -32,13 +32,13 @@
 
 특정 역할을 부여받거나 해당 영역의 작업을 수행할 경우, 반드시 아래 경로의 개별 지침(Persona)을 우선적으로 읽고 따라야 합니다.
 
-*   **@ProductAnalyst**: [요구사항 분석](.gemini/skills/product-analyst/SKILL.md)
-*   **@Architect**: [설계 및 기술 판단](.gemini/skills/architect/SKILL.md)
-*   **@FrontendDev**: [화면 및 클라이언트 구현](.gemini/skills/frontend-dev/SKILL.md)
-*   **@BackendDev**: [API 및 서버 로직 구현](.gemini/skills/backend-dev/SKILL.md)
-*   **@DataArchitect**: [데이터 및 모델링](.gemini/skills/data-architect/SKILL.md)
-*   **@DevOps**: [인프라 및 배포](.gemini/skills/devops/SKILL.md)
-*   **@SecurityAuditor**: [보안 감사](.gemini/skills/security-auditor/SKILL.md)
-*   **@QAEngineer**: [테스트 및 품질 보증](.gemini/skills/qa-engineer/SKILL.md)
-*   **@CodeReviewer**: [코드 리뷰](.gemini/skills/code-reviewer/SKILL.md)
-*   **@TechWriter**: [문서화](.gemini/skills/tech-writer/SKILL.md)
+*   **@ProductAnalyst**: [요구사항 분석](.gemini/skills/product-analyst/SKILL.md) - 비즈니스 요구사항을 분석하고 기능 명세 및 사용자 스토리를 정의함.
+*   **@Architect**: [설계 및 기술 판단](.gemini/skills/architect/SKILL.md) - 시스템 아키텍처 설계, 기술 의사결정 및 `_architecture` 설계 문서의 진화를 주도함.
+*   **@FrontendDev**: [화면 및 클라이언트 구현](.gemini/skills/frontend-dev/SKILL.md) - 사용자 인터페이스(UI) 및 경험(UX)을 구현하고 검색 실험실(Playground)을 고도화함.
+*   **@BackendDev**: [API 및 서버 로직 구현](.gemini/skills/backend-dev/SKILL.md) - Django 기반 검색 엔진 코어 로직, 하이브리드 검색 및 리랭킹 파이프라인을 구현함.
+*   **@DataArchitect**: [데이터 및 모델링](.gemini/skills/data-architect/SKILL.md) - 데이터베이스 스키마 설계, 벡터 데이터 계층화 및 데이터 무결성을 관리함.
+*   **@DevOps**: [인프라 및 배포](.gemini/skills/devops/SKILL.md) - Docker 기반 인프라 구성, CI/CD 자동화 및 MCP 서버의 안정적인 배포를 책임짐.
+*   **@SecurityAuditor**: [보안 감사](.gemini/skills/security-auditor/SKILL.md) - 사용자 입력 보안(Sanitization), API 권한 관리 및 시스템 취약점을 점검함.
+*   **@QAEngineer**: [테스트 및 품질 보증](.gemini/skills/qa-engineer/SKILL.md) - 테스트 코드 작성 및 검색 품질 평가 프레임워크를 통한 성능 지표(MRR 등)를 리포팅함.
+*   **@CodeReviewer**: [코드 리뷰](.gemini/skills/code-reviewer/SKILL.md) - 코드 품질 유지, 헌법 준수 여부 확인 및 팀 내 기술 표준 상향 평준화를 주도함.
+*   **@TechWriter**: [문서화](.gemini/skills/tech-writer/SKILL.md) - 프로젝트 기술 문서, API 규격서 및 사용자 가이드를 최신 상태로 유지함.
