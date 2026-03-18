@@ -1,41 +1,47 @@
 import asyncio
 import os
+import sys
+from pathlib import Path
 
 import django
 
 # Django 설정 로드 (import 이전에 수행되어야 함)
+# src 디렉토리를 파이썬 경로에 추가
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.append(str(BASE_DIR / "src"))
+
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 django.setup()
 
 # ruff: noqa: E402 (Django setup 이후 임포트를 허용)
 from documents.services.search import get_search_service
 
-# US3: 골든 데이터셋 정의 (주요 질문 및 정답 키워드 쌍)
+# US3: 골든 데이터셋 정의 (Django ORM Cookbook 기반 실질적 질문 및 키워드)
 GOLDEN_DATASET = [
     {
-        "query": "how to filter a queryset in django",
-        "expected_keywords": ["filter", "QuerySet", "filter()"],
-        "category": "ORM",
+        "query": "how to perform AND queries in django orm",
+        "expected_keywords": ["AND", "filter", "Q objects"],
+        "category": "Querying",
     },
     {
-        "query": "define a model field with choices",
-        "expected_keywords": ["choices", "models.CharField", "Enumeration"],
-        "category": "Models",
+        "query": "how to group records using annotate or aggregate",
+        "expected_keywords": ["annotate", "Count", "Sum", "group by"],
+        "category": "Aggregation",
     },
     {
-        "query": "django middleware order of execution",
-        "expected_keywords": ["MIDDLEWARE", "process_request", "order"],
-        "category": "Core",
+        "query": "order query results by descending or ascending",
+        "expected_keywords": ["order_by", "desc()", "asc()"],
+        "category": "Ordering",
     },
     {
-        "query": "how to create a custom template tag",
-        "expected_keywords": ["register.filter", "template.Library", "simple_tag"],
-        "category": "Templates",
+        "query": "defining foreign key and one to one relationships",
+        "expected_keywords": ["ForeignKey", "OneToOneField", "related_name"],
+        "category": "Modelling",
     },
     {
-        "query": "django rest framework authentication classes",
-        "expected_keywords": ["authentication_classes", "IsAuthenticated", "BaseAuthentication"],
-        "category": "DRF",
+        "query": "how to write unit tests for django models",
+        "expected_keywords": ["TestCase", "setUp", "assert"],
+        "category": "Testing",
     },
 ]
 

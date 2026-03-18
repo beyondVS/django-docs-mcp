@@ -56,7 +56,7 @@ class SearchService:
         limit: int = 20,
         rrf_k: int = 60,
     ) -> list[dict[str, Any]]:
-        query_vector = self.embedding_service.embed_text(query)
+        query_vector = await sync_to_async(self.embedding_service.embed_text)(query)
 
         clean_query = query.strip()
         use_bm25 = len(clean_query) >= 2
@@ -90,14 +90,14 @@ class SearchService:
         bm25_part_sql = f"""
             SELECT
                 c.id,
-                1.0 / ({rrf_k} + ROW_NUMBER() OVER (ORDER BY c.id @@@ %s)) as score
+                1.0 / ({rrf_k} + ROW_NUMBER() OVER (ORDER BY paradedb.score(c.id) DESC)) as score
             FROM documents_chunk c
             JOIN documents_section s ON c.section_id = s.id
             JOIN documents_document d ON s.document_id = d.id
             WHERE {where_sql} AND {bm25_condition}
             LIMIT {limit * 2}
         """
-        bm25_part_params = where_params + [clean_query, clean_query] if use_bm25 else where_params
+        bm25_part_params = where_params + [clean_query] if use_bm25 else where_params
 
         full_sql = f"""
         WITH vector_results AS ({vector_part_sql}),
