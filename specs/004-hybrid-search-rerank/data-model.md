@@ -12,7 +12,7 @@
 ### 2. RerankProcessor (Service)
 - **역할**: 1차 검색 결과를 ONNX 기반 Reranker 모델로 재정렬.
 - **주요 속성**:
-    - `model_name`: `tss-deposium/bge-reranker-v2-m3-onnx-int8`.
+    - `model_name`: `keisuke-miyako/bge-reranker-base-onnx-int8` (CPU 최적화 INT8 양자화 모델).
     - `threshold`: 최종 반환할 유사도 임계값.
 
 ### 3. SearchEvaluationPair (Evaluation)

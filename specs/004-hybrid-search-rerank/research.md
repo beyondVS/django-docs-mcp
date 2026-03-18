@@ -10,10 +10,11 @@
 - **구현 방식**: `WITH` 절을 사용한 1차 검색(Rank 산출) 후 `FULL OUTER JOIN`을 통한 점수 합산. 이때 RRF 상수 `k=60`(업계 표준)을 적용하여 정밀도와 재현율의 균형을 맞춤.
 
 ### 2. Reranker 및 최적화 전략
-- **선택**: `tss-deposium/bge-reranker-v2-m3-onnx-int8` + `onnxruntime`.
+- **선택**: `keisuke-miyako/bge-reranker-base-onnx-int8` + `onnxruntime` + 비동기 처리(`sync_to_async`).
 - **근거**:
-    - `INT8` 양자화 모델은 CPU 환경에서 메모리 점유율을 70% 이상 절감(약 500~700MB)하면서도 정확도 손실이 거의 없음.
-    - `ONNX Runtime`은 멀티코어 CPU를 효율적으로 활용하여 상위 20개 청크에 대해 500ms 이내의 추론 속도를 보장함.
+    - `INT8` 양자화된 Base 모델(~110M 파라미터)은 CPU 환경에서 v2-m3 대비 추론 속도가 압도적으로 빠르며(0.5초 이내), 메모리 점유율을 대폭 절감함.
+    - 리랭커의 컨텍스트 한계(512 토큰)에 맞춰 문서 Chunk Size를 기존 2500자에서 1500자로 하향 조정하여, 리랭킹 과정에서의 정보 누락(Truncation)을 방지함.
+    - 리랭커의 무거운 연산이 장고 이벤트 루프를 블로킹하지 않도록 `sync_to_async`로 래핑함.
 
 ### 3. 임베딩 모델 실행 방식
 - **선택**: `bge-m3` 역시 `onnxruntime` 기반으로 전환.
@@ -32,7 +33,7 @@
 ## 미해결 사항 (Open Questions / Needs Clarification)
 
 - [x] **질문**: `pg_search` 확장이 현재 Docker 환경(Postgres)에서 즉시 사용 가능한가?
-    - **답변**: `pgvector/pgvector:pg18` 공식 이미지를 베이스로 하여 `pg_search`(ParadeDB)를 추가 설치하는 커스텀 `Dockerfile`을 생성함. 이를 통해 `pgvector`와 `pg_search`를 동시에 지원하며 향후 확장성을 보장함.
+    - **답변**: `paradedb/paradedb:latest-pg18` 공식 이미지를 사용함. 이 이미지는 `pgvector`, `pg_search`, `pg_vectorscale`을 모두 기본 포함하고 있어 별도의 빌드 과정 없이 즉시 통합 검색 환경 구축이 가능함.
 
 - [x] **질문**: Rerank 대상인 '상위 20개'가 충분한가?
     - **답변**: 하이브리드 검색의 재현율(Recall)이 높으므로 20개면 충분하며, 필요 시 환경 변수로 조정 가능하도록 설계함.

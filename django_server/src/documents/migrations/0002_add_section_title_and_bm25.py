@@ -21,7 +21,7 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             sql="""
             CREATE INDEX IF NOT EXISTS idx_chunk_bm25 ON documents_chunk 
-            USING bm25 (content, section_title) 
+            USING bm25 (id, content, section_title) 
             WITH (key_field = 'id');
             """,
             reverse_sql="DROP INDEX IF EXISTS idx_chunk_bm25;"

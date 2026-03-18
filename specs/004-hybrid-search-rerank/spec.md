@@ -10,7 +10,7 @@
 ### Session 2026-03-18
 
 - Q: 하이브리드 검색의 BM25(키워드) 구현 방식은? → A: PostgreSQL의 `pg_search` (ParadeDB) 확장을 사용하여 고성능 BM25 인덱싱을 수행한다.
-- Q: Reranker 모델 선정 및 최적화 전략은? → A: 사전 양자화된 `tss-deposium/bge-reranker-v2-m3-onnx-int8` 모델을 선택하며, CPU 환경 최적화를 위해 임베딩 모델과 Reranker 모두 `ONNX Runtime`을 적용한다.
+- Q: Reranker 모델 선정 및 최적화 전략은? → A: 사전 양자화된 `keisuke-miyako/bge-reranker-base-onnx-int8` 모델을 선택하여 속도와 정밀도의 균형을 맞춘다. 임베딩 모델과 Reranker 모두 `ONNX Runtime`을 적용하며, 장고 서버의 반응성을 위해 리랭킹 처리는 `sync_to_async` 비동기 방식으로 구현한다. 추가로 리랭커의 512 토큰 한계에 맞추어 청크 사이즈를 1500으로 최적화한다.
 
 ## 사용자 시나리오 및 테스트 *(필수)*
 

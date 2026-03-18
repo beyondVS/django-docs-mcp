@@ -10,7 +10,7 @@ PostgreSQL의 `pg_search` 확장을 도입하여 BM25 키워드 검색을 구현
 
 **언어/버전**: Python 3.14
 **주요 의존성**: `optimum[onnxruntime]~=1.24.0`, `transformers~=4.48.0`, `pg_search` (ParadeDB), `pgvector`
-**저장소**: PostgreSQL (pgvector/pgvector:pg18 베이스 커스텀 이미지)
+**저장소**: PostgreSQL (paradedb/paradedb:latest-pg18 공식 이미지)
 **테스트**: `pytest` (신규 평가 데이터셋 포함)
 **대상 플랫폼**: Linux 서버 (Docker)
 **제약 사항**: CPU 환경에서의 메모리 최적화 필수 (INT8 양자화 사용)
@@ -20,7 +20,7 @@ PostgreSQL의 `pg_search` 확장을 도입하여 BM25 키워드 검색을 구현
 - [x] **RAG 정확성 확인**: 하이브리드 검색을 통해 키워드 매칭 정밀도를 높였는가? (BM25 도입)
 - [x] **아키텍처 분리 확인**: 검색 로직이 `django_server/services/search.py`에 응집되었는가?
 - [x] **데이터 무결성 확인**: Rerank 점수가 메타데이터와 함께 일관되게 전달되는가?
-- [x] **컨테이너 환경 확인**: `pg_search`를 위한 Docker 이미지 변경이 계획에 포함되었는가?
+- [x] **컨테이너 환경 확인**: `pg_search`를 지원하는 공식 이미지가 계획에 반영되었는가?
 
 ## 프로젝트 구조 (수정 및 추가 대상)
 
@@ -40,10 +40,9 @@ django_server/
 ## 실행 계획 (Execution Plan)
 
 ### 0단계: 인프라 및 기반 구축
-1. **DB Dockerfile 작성**: `pgvector/pgvector:pg18`을 베이스로 하고 `pg_search` 패키지 저장소 설정 및 확장을 설치하는 `Dockerfile` 생성.
-2. **docker-compose 수정**: `image` 대신 `build` 설정을 사용하도록 업데이트하여 커스텀 이미지를 적용.
-3. **BM25 인덱스 생성**: 마이그레이션을 통해 `documents_chunk` 테이블에 BM25 인덱스 추가.
-4. **의존성 추가**: `django_server` 프로젝트에 `uv add optimum[onnxruntime] transformers` 실행 후 `pyproject.toml` 버전을 `~=` 형식으로 조정.
+1. **공식 이미지 적용**: `docker-compose.yml`에서 `paradedb/paradedb:latest-pg18` 이미지를 사용하도록 업데이트 (pgvector, pg_search 기본 포함).
+2. **BM25 인덱스 생성**: 마이그레이션을 통해 `documents_chunk` 테이블에 BM25 인덱스 추가.
+3. **의존성 추가**: `django_server` 프로젝트에 `uv add optimum[onnxruntime] transformers` 실행 후 `pyproject.toml` 버전을 `~=` 형식으로 조정.
 
 ### 1단계: 하이브리드 검색 구현 (Retrieval)
 1. **SearchService 리팩토링**: 벡터 검색과 BM25 검색을 병렬로 수행하는 SQL 작성.

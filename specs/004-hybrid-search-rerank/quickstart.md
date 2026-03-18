@@ -22,7 +22,7 @@ uv add optimum[onnxruntime] transformers
 ### 3. 모델 다운로드
 검색 엔진 구동 시 자동으로 다운로드되거나, 명시적으로 미리 다운로드할 수 있습니다.
 - Embedding: `BAAI/bge-m3` (ONNX 가중치 포함)
-- Reranker: `tss-deposium/bge-reranker-v2-m3-onnx-int8`
+- Reranker: `keisuke-miyako/bge-reranker-base-onnx-int8`
 
 ## 검색 테스트 (Testing)
 

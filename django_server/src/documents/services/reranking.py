@@ -9,7 +9,7 @@ class RerankingService:
     """
     검색 결과의 정밀도를 향상시키기 위해 Reranker 모델을 실행하는 서비스 클래스.
 
-    BAAI/bge-reranker-v2-m3의 ONNX 양자화 버전을 사용하여
+    BAAI/bge-reranker-base의 ONNX 버전을 사용하여
     질문과 문서 청크 간의 관련성 점수를 정밀하게 재산출합니다.
     """
 
@@ -24,16 +24,16 @@ class RerankingService:
         if cls._instance is None:
             instance = super().__new__(cls)
             cls._instance = instance
-            # 이미 INT8 양자화된 ONNX 모델 활용
-            model_name = "tss-deposium/bge-reranker-v2-m3-onnx-int8"
+            # BGE Reranker Base INT8 양자화 모델 활용 (CPU 최적화의 정점)
+            model_id = "keisuke-miyako/bge-reranker-base-onnx-int8"
 
             # 1. 토크나이저 로드
-            cls._tokenizer = AutoTokenizer.from_pretrained(model_name)
+            cls._tokenizer = AutoTokenizer.from_pretrained(model_id)
 
             # 2. ONNX Reranker 모델 로드
-            # CPU 환경 최적화를 위해 ONNX Runtime 사용
+            # 해당 레포지토리의 양자화된 모델 파일명을 직접 지정합니다.
             cls._model = ORTModelForSequenceClassification.from_pretrained(
-                model_name, provider="CPUExecutionProvider"
+                model_id, provider="CPUExecutionProvider", file_name="model_quantized.onnx"
             )
         return cls._instance
 

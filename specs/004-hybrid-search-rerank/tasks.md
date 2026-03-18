@@ -12,9 +12,9 @@
 ## 구현 단계 (Phases)
 
 ### 1단계: 설정 및 인프라 구축 (Setup)
-- [x] T001 `django_server/db.Dockerfile`을 생성하여 `pgvector/pgvector:pg18` 기반에 `pg_search` 확장 설치 로직 구현
-- [x] T002 `docker-compose.yml`의 `db` 서비스를 커스텀 Dockerfile 빌드 방식으로 업데이트
-- [x] T003 `django_server` 디렉토리에서 `uv add "optimum[onnxruntime]~=1.24.0" "transformers~=4.48.0"` 실행 및 `pyproject.toml` 버전 기법(`~=`) 조정
+- [x] T001 `docker-compose.yml`에서 `paradedb/paradedb:latest-pg18` 공식 이미지를 사용하도록 인프라 구성 (pgvector, pg_search 포함)
+- [x] T002 기존 `django_server/db.Dockerfile` 등 불필요한 커스텀 빌드 파일 제거 및 설정 단순화
+- [x] T003 `django_server` 디렉토리에서 `uv add "optimum[onnxruntime]" "transformers"` 실행 및 `pyproject.toml` 버전 기법(`~=`) 조정
 - [x] T004 [P] `django_server/src/documents/migrations/`에 `pg_search` 확장을 활성화하고 `documents_chunk` 테이블에 BM25 인덱스를 생성하는 `RunSQL` 마이그레이션 작성
 
 ### 2단계: 기초 로직 리팩토링 (Foundational)

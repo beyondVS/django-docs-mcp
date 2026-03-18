@@ -63,7 +63,7 @@ async def search_results(request: HttpRequest) -> HttpResponse:
         query=query,
         target_version=target_version if target_version != "All" else None,
         category=category if category != "All" else None,
-        limit=10,
+        limit=5,
     )
 
     return render(request, "playground/results.html", {"results": results, "query": query})

@@ -81,8 +81,10 @@ uv run python src/manage.py migrate
 ```
 
 # 3. 데이터 적재 및 임베딩 (Django Command)
-# 예: data_sources/django2-orm-cookbook 폴더 내의 마크다운 파일을 적재
+```bash
+# data_sources/django2-orm-cookbook 폴더 내의 마크다운 파일을 적재
 uv run python src/manage.py ingest_docs ../data_sources/django2-orm-cookbook/ --doc-version 2.2 --category Cookbook
+```
 
 # 4. 검색 실험실(Playground) 실행
 ```bash
