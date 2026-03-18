@@ -7,7 +7,7 @@
 *   **Embedding Model:** BAAI/bge-m3
     *   **특징:** 다국어 특화, 1024 차원 벡터 생성, 8,192 토큰 컨텍스트 지원.
     *   **추론 가속:** **ONNX Runtime** 기반의 고속 추론을 활용하여 CPU 환경에서의 지연 시간을 최소화합니다.
-*   **Reranker Model:** BAAI/bge-reranker-v2-m3
+*   **Reranker Model:** BAAI/bge-reranker-base (ONNX INT8 양자화)
     *   **특징:** 질문-문서 쌍의 의미적 연관성을 정밀 점수화(0~1).
     *   **최적화:** **INT8 양자화된 ONNX 모델**을 사용하여 메모리 사용량을 절감하고 실행 속도를 높였습니다.
 

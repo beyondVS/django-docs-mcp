@@ -28,7 +28,7 @@
 - [x] T010 [US1] `django_server/src/documents/services/search.py`의 `hybrid_search` 결과를 기존 `search_django_knowledge` 규격에 맞게 변환하는 래퍼 작성
 
 ### 4단계: [US2] Rerank 프로세서 구현 (P1)
-- [x] T011 [US2] `django_server/src/documents/services/reranking.py` 신설 및 `optimum` 기반의 `bge-reranker-v2-m3-onnx-int8` 모델 로드 로직 구현 (Hugging Face 자동 다운로드 활용)
+- [x] T011 [US2] `django_server/src/documents/services/reranking.py` 신설 및 `optimum` 기반의 `bge-reranker-base-onnx-int8` 모델 로드 로직 구현 (Hugging Face 자동 다운로드 활용)
 - [x] T012 [US2] `RerankingService.rerank` 메서드에서 [질문, 청크] 쌍에 대한 유사도 점수 산출 및 Sigmoid 적용 로직 구현
 - [x] T013 [US2] `django_server/src/documents/services/search.py`에서 하이브리드 검색 결과 상위 20개를 Reranker에 전달하고 최종 순위를 정렬하는 파이프라인 연결
 - [x] T014 [P] [US2] `django_server/tests/test_search.py`에 Rerank 후 검색 결과의 정밀도 향상을 검증하는 테스트 케이스 추가

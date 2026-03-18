@@ -75,7 +75,7 @@
 ### 시스템 제약 사항 (System Constraints - Django Docs MCP)
 
 - **SYS-001**: 모든 데이터 조회는 `pgvector` 기반의 인프라를 활용하되, BM25 키워드 검색을 위해 `pg_search` (ParadeDB) 확장을 도입하여 고성능 인덱싱 및 정밀한 점수 산출을 수행해야 함.
-- **SYS-002**: 임베딩 모델(bge-m3)과 Reranker 모델이 검색 시점에 동시에 로드되므로 메모리 효율 및 CPU 추론 속도 최적화가 필수적임. 이를 위해 Reranker는 사전 양자화된 `tss-deposium/bge-reranker-v2-m3-onnx-int8` 모델을 사용하며, 두 모델 모두 `ONNX Runtime`을 적용하여 실행해야 함.
+- **SYS-002**: 임베딩 모델(bge-m3)과 Reranker 모델이 검색 시점에 동시에 로드되므로 메모리 효율 및 CPU 추론 속도 최적화가 필수적임. 이를 위해 Reranker는 사전 양자화된 `keisuke-miyako/bge-reranker-base-onnx-int8` 모델을 사용하며, 두 모델 모두 `ONNX Runtime`을 적용하여 실행해야 함.
 - **SYS-003**: 전체 검색 프로세스(Retrieval + Rerank)는 헌법의 실용주의 원칙에 따라 과도한 복잡성을 지양해야 함.
 
 ### 주요 엔티티

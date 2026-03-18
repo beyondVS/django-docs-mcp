@@ -18,7 +18,7 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 ## ✨ 주요 특징 (Key Features)
 
 * **하이브리드 검색 (BM25 + Vector)**: PostgreSQL의 `pg_search`를 활용한 키워드 검색(BM25)과 `pgvector` 기반의 벡터 검색을 RRF(Reciprocal Rank Fusion) 알고리즘으로 통합하여 검색 정확도를 극대화했습니다.
-* **ONNX 기반 Reranking**: 하이브리드 검색 후보군(Top-10)을 대상으로 `bge-reranker-v2-m3` 모델을 ONNX Runtime에서 실행하여 질의와의 관련성을 정밀하게 재평가합니다.
+* **ONNX 기반 Reranking**: 하이브리드 검색 후보군(Top-10)을 대상으로 `bge-reranker-base` 모델을 ONNX Runtime에서 실행하여 질의와의 관련성을 정밀하게 재평가합니다.
 * **의미론적 2단계 청킹**: `MarkdownHeaderTextSplitter`로 문서 구조(H1~H3)를 파싱하고, `MarkdownTextSplitter`로 코드 블록을 보호하며 재분할하는 정교한 파이프라인을 제공합니다.
 * **코드 블록 무결성 보장**: `bge-m3` 모델의 넓은 컨텍스트(8,192 토큰)를 활용하여, 긴 파이썬 예제 코드도 잘림 없이 온전한 형태로 검색 결과에 제공합니다.
 * **데이터 순수성 유지**: 청크 본문에 인위적인 컨텍스트 정보를 주입하지 않고 순수 마크다운만 유지함으로써 임베딩 품질을 높이고 데이터 원본성을 확보했습니다.
@@ -30,7 +30,7 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 * **Ingestion & Testing:** Django (안정적인 Admin 제공 및 Playground 검색 튜닝 UI)
 * **Models & Runtime:**
     * **Embedding:** `BAAI/bge-m3` (ONNX 기반 가속, 1024차원)
-    * **Reranker:** `BAAI/bge-reranker-v2-m3` (ONNX INT8 양자화 모델)
+    * **Reranker:** `BAAI/bge-reranker-base` (ONNX INT8 양자화 모델)
     * **Runtime:** `ONNX Runtime` (CPU 환경 최적화 및 고속 추론)
 * **Infrastructure:** Docker & Docker Compose (격리된 로컬 환경 및 배포 용이성)
 
