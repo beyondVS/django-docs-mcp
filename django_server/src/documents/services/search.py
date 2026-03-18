@@ -1,22 +1,23 @@
+import logging
 from typing import Any
 
+from asgiref.sync import sync_to_async
+from django.db import connection
 from documents.models import Chunk
 from documents.services.embedding import get_embedding_service
-from pgvector.django import CosineDistance
+from documents.services.reranking import get_reranking_service
+
+logger = logging.getLogger(__name__)
 
 
 class SearchService:
     """
-    pgvector를 활용하여 자연어 질의에 대한 유사 문서 검색을 수행하는 서비스 클래스.
-
-    코사인 유사도(Cosine Similarity)를 기반으로 질의어와 가장 관련성이 높은 문서 청크를 찾아냅니다.
+    하이브리드 검색 및 pgvector 유사도 검색을 수행하는 서비스 클래스.
     """
 
     def __init__(self) -> None:
-        """
-        SearchService를 초기화하고 임베딩 서비스를 로드합니다.
-        """
         self.embedding_service = get_embedding_service()
+        self.reranking_service = get_reranking_service()
 
     async def search(
         self,
@@ -25,62 +26,130 @@ class SearchService:
         category: str | None = None,
         limit: int = 5,
     ) -> list[dict[str, Any]]:
-        """
-        코사인 유사도를 기반으로 관련 문서 청크를 검색합니다.
+        # 1. 하이브리드 검색 수행
+        initial_results = await self.hybrid_search(
+            query=query, target_version=target_version, category=category, limit=10
+        )
 
-        Args:
-            query (str): 사용자의 자연어 검색 질의어.
-            target_version (Optional[str]): 특정 Django 버전으로 필터링 (예: "5.0").
-            category (Optional[str]): 특정 문서 카테고리로 필터링 (예: "Tutorials").
-            limit (int): 반환할 최대 결과 개수. 기본값 5.
+        if not initial_results:
+            return []
 
-        Returns:
-            list[dict[str, Any]]: 검색 결과 리스트.
-                각 요소는 'content', 'similarity', 'document_title' 등을 포함합니다.
-        """
-        # 질의어를 벡터로 변환
-        query_vector = self.embedding_service.embed_text(query)
+        # 2. Rerank 수행
+        contents = [r["content"] for r in initial_results]
+        # 이벤트 루프 차단 방지를 위해 sync_to_async 사용
+        rerank_scores = await sync_to_async(self.reranking_service.rerank)(query, contents)
 
-        # 쿼리셋 구성 및 연관 객체 최적화 (Select Related)
-        queryset = Chunk.objects.select_related("section", "section__document")
+        # 3. 점수 업데이트 및 최종 정렬
+        for res, score in zip(initial_results, rerank_scores, strict=False):
+            res["similarity"] = round(score, 6)
+            res["extra_meta"]["rerank_score"] = score
 
-        # 필터링 적용
+        final_results = sorted(initial_results, key=lambda x: x["similarity"], reverse=True)[:limit]
+
+        return final_results
+
+    async def hybrid_search(
+        self,
+        query: str,
+        target_version: str | None = None,
+        category: str | None = None,
+        limit: int = 20,
+        rrf_k: int = 60,
+    ) -> list[dict[str, Any]]:
+        query_vector = await sync_to_async(self.embedding_service.embed_text)(query)
+
+        clean_query = query.strip()
+        use_bm25 = len(clean_query) >= 2
+
+        where_clauses = ["d.status = 'Active'"]
+        where_params: list[str] = []
+
         if target_version:
-            queryset = queryset.filter(section__document__target_version=target_version)
+            where_clauses.append("d.target_version = %s")
+            where_params.append(target_version)
         if category:
-            queryset = queryset.filter(section__document__category=category)
+            where_clauses.append("d.category = %s")
+            where_params.append(category)
 
-        # 활성화된 문서만 검색 대상으로 설정
-        queryset = queryset.filter(section__document__status="Active")
+        where_sql = " AND ".join(where_clauses)
 
-        # 유사도(1 - 거리) 기준 정렬 및 상위 결과 추출
-        # pgvector의 CosineDistance는 0(완전 일치)에서 2(반대) 사이의 값을 가짐
-        results = queryset.annotate(distance=CosineDistance("embedding", query_vector)).order_by(
-            "distance"
-        )[:limit]
+        vector_part_sql = f"""
+            SELECT
+                c.id,
+                1.0 / ({rrf_k} + ROW_NUMBER() OVER (ORDER BY c.embedding <=> %s::vector)) as score
+            FROM documents_chunk c
+            JOIN documents_section s ON c.section_id = s.id
+            JOIN documents_document d ON s.document_id = d.id
+            WHERE {where_sql}
+            ORDER BY c.embedding <=> %s::vector
+            LIMIT {limit * 2}
+        """
+        vector_part_params = [query_vector] + where_params + [query_vector]
 
-        # 비동기 이터레이션을 통해 결과 리스트 생성
-        search_results: list[dict[str, Any]] = []
-        async for chunk in results:
-            search_results.append(
-                {
-                    "id": str(chunk.id),
-                    "content": str(chunk.content),
-                    "similarity": round(1 - float(chunk.distance), 4),
-                    "document_title": str(chunk.section.document.title),
-                    "section_title": str(chunk.section.title),
-                    "version": str(chunk.section.document.target_version),
-                }
-            )
+        bm25_condition = "c.id @@@ %s" if use_bm25 else "FALSE"
+        bm25_part_sql = f"""
+            SELECT
+                c.id,
+                1.0 / ({rrf_k} + ROW_NUMBER() OVER (ORDER BY paradedb.score(c.id) DESC)) as score
+            FROM documents_chunk c
+            JOIN documents_section s ON c.section_id = s.id
+            JOIN documents_document d ON s.document_id = d.id
+            WHERE {where_sql} AND {bm25_condition}
+            LIMIT {limit * 2}
+        """
+        bm25_part_params = where_params + [clean_query] if use_bm25 else where_params
+
+        full_sql = f"""
+        WITH vector_results AS ({vector_part_sql}),
+             bm25_results AS ({bm25_part_sql})
+        SELECT
+            COALESCE(v.id, b.id) as chunk_id,
+            (COALESCE(v.score, 0) + COALESCE(b.score, 0)) as rrf_score
+        FROM vector_results v
+        FULL OUTER JOIN bm25_results b ON v.id = b.id
+        ORDER BY rrf_score DESC
+        LIMIT %s;
+        """
+
+        full_params = vector_part_params + bm25_part_params + [limit]
+
+        return await sync_to_async(self._execute_sql)(full_sql, full_params)
+
+    def _execute_sql(self, sql: str, params: list[Any]) -> list[dict[str, Any]]:
+        with connection.cursor() as cursor:
+            cursor.execute(sql, params)
+            rows = cursor.fetchall()
+
+        if not rows:
+            return []
+
+        chunk_ids = [row[0] for row in rows]
+        rrf_scores = {row[0]: row[1] for row in rows}
+
+        chunks = Chunk.objects.select_related("section", "section__document").filter(
+            id__in=chunk_ids
+        )
+        chunk_map = {chunk.id: chunk for chunk in chunks}
+
+        search_results = []
+        for cid in chunk_ids:
+            if cid in chunk_map:
+                chunk = chunk_map[cid]
+                search_results.append(
+                    {
+                        "id": str(chunk.id),
+                        "content": str(chunk.content),
+                        "similarity": round(float(rrf_scores[cid]), 6),
+                        "document_title": str(chunk.section.document.title),
+                        "section_title": str(chunk.section.title),
+                        "version": str(chunk.section.document.target_version),
+                        "extra_meta": {"rrf_score": rrf_scores[cid]},
+                    }
+                )
 
         return search_results
 
 
 def get_search_service() -> SearchService:
-    """
-    SearchService 인스턴스를 가져오는 헬퍼 함수.
-
-    Returns:
-        SearchService: 초기화된 검색 서비스.
-    """
+    """SearchService 인스턴스를 반환합니다."""
     return SearchService()

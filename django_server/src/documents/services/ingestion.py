@@ -108,6 +108,7 @@ class IngestionService:
                 Chunk.objects.create(
                     section=section,
                     content=chunk_info["content"],
+                    section_title=section.title,
                     embedding=embedding,
                     token_count=int(chunk_info["metadata"].get("token_count", 0)),
                     overlap_index=int(chunk_info["metadata"].get("chunk_index", 0)),

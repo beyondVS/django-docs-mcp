@@ -1,89 +1,79 @@
 from typing import Any
 
 import torch
-from sentence_transformers import SentenceTransformer
+from optimum.onnxruntime import ORTModelForFeatureExtraction
+from transformers import AutoTokenizer
 
 
 class EmbeddingService:
     """
     텍스트 데이터를 벡터 임베딩으로 변환하는 싱글톤 서비스 클래스.
 
-    BAAI/bge-m3 모델을 사용하여 1024차원의 밀집 벡터를 생성합니다.
-    GPU 사용이 가능할 경우 자동으로 CUDA 가속을 활용합니다.
+    optimum 및 onnxruntime을 사용하여 BAAI/bge-m3 모델의 ONNX 버전을 실행합니다.
     """
 
     _instance: EmbeddingService | None = None
-    _model: SentenceTransformer | None = None
+    _model: ORTModelForFeatureExtraction | None = None
+    _tokenizer: Any = None
 
     def __new__(cls) -> EmbeddingService:
         """
         EmbeddingService의 싱글톤 인스턴스를 생성하거나 반환합니다.
-
-        Returns:
-            EmbeddingService: 싱글톤 서비스 인스턴스.
         """
         if cls._instance is None:
             instance = super().__new__(cls)
             cls._instance = instance
-            # 모델은 한 번만 로드함
             model_name = "BAAI/bge-m3"
-            # GPU 사용 가능 여부에 따라 디바이스 설정
-            device = "cuda" if torch.cuda.is_available() else "cpu"
-            cls._model = SentenceTransformer(model_name, device=device)
+
+            # 1. 토크나이저 로드
+            cls._tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+            # 2. ONNX 모델 로드
+            cls._model = ORTModelForFeatureExtraction.from_pretrained(
+                model_name, subfolder="onnx", provider="CPUExecutionProvider"
+            )
         return cls._instance
 
     def embed_text(self, text: str) -> list[float]:
-        """
-        단일 텍스트 문자열을 1024차원 벡터로 변환합니다.
-
-        Args:
-            text (str): 임베딩할 텍스트 문자열.
-
-        Returns:
-            list[float]: 생성된 벡터 임베딩 리스트 (L2 정규화 포함).
-        """
-        model = self._get_model()
-
-        # 정규화: bge-m3 모델은 일반적으로 정규화 시 성능이 향상됨
-        embedding: Any = model.encode(text, normalize_embeddings=True)
-        return [float(x) for x in embedding.tolist()]
+        """단일 텍스트를 벡터로 변환합니다."""
+        return self.embed_batch([text])[0]
 
     def embed_batch(self, texts: list[str]) -> list[list[float]]:
-        """
-        여러 텍스트 문자열 리스트를 각각 벡터로 변환합니다.
+        """여러 텍스트를 배치 처리하여 벡터로 변환합니다."""
+        tokenizer = self._tokenizer
+        model = self._model
 
-        Args:
-            texts (list[str]): 임베딩할 텍스트 문자열 리스트.
+        if model is None or tokenizer is None:
+            raise RuntimeError("모델 또는 토크나이저가 로드되지 않았습니다.")
 
-        Returns:
-            list[list[float]]: 생성된 벡터 임베딩 리스트의 리스트.
-        """
-        model = self._get_model()
+        # 1. 토큰화
+        encoded_input = tokenizer(
+            texts, padding=True, truncation=True, max_length=8192, return_tensors="pt"
+        )
 
-        embeddings: Any = model.encode(texts, normalize_embeddings=True)
-        return [[float(x) for x in e.tolist()] for e in embeddings]
+        # 2. 저수준 ONNX 추론 (optimum의 forward 에러 우회)
+        # model.model은 실제 onnxruntime.InferenceSession 객체입니다.
+        onnx_inputs = {k: v.cpu().numpy() for k, v in encoded_input.items()}
 
-    def _get_model(self) -> SentenceTransformer:
-        """
-        로드된 모델을 반환하거나, 로드되지 않았을 경우 에러를 발생시킵니다.
-        """
-        if self._model is not None:
-            return self._model
+        # ONNX 실행 및 모든 출력 확보
+        # outputs는 리스트 형태로 반환됩니다.
+        onnx_outputs = model.model.run(None, onnx_inputs)
 
-        # 싱글톤 구조상 발생하기 어렵지만 mypy 대응을 위해 추가
-        model_name = "BAAI/bge-m3"
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        model = SentenceTransformer(model_name, device=device)
-        self.__class__._model = model
+        # 3. 임베딩 추출 및 Pooling
+        # bge-m3 ONNX 공식 모델의 출력 순서: [0] sequence_output, [1] pooled_output (또는 그 반대)
+        # 대개 첫 번째 출력(index 0)이 sequence_output(Batch, Seq, Hidden)입니다.
+        embeddings_np = onnx_outputs[0]
+        embeddings = torch.from_numpy(embeddings_np)
 
-        return model
+        # 3차원(Batch, Seq, Hidden)이라면 CLS 토큰(0번 인덱스)만 추출
+        if len(embeddings.shape) == 3:
+            embeddings = embeddings[:, 0, :]
+
+        # 4. L2 정규화 및 리스트 변환
+        embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
+        return [[float(x) for x in e] for e in embeddings.tolist()]
 
 
 def get_embedding_service() -> EmbeddingService:
-    """
-    EmbeddingService 인스턴스를 가져오는 헬퍼 함수.
-
-    Returns:
-        EmbeddingService: 초기화된 임베딩 서비스.
-    """
+    """EmbeddingService 인스턴스를 반환합니다."""
     return EmbeddingService()

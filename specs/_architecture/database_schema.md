@@ -1,6 +1,6 @@
 # 데이터베이스 스키마 정의서 (DB Schema Spec)
 
-관리 편의성(정규화)과 검색 속도(비정규화)를 융합한 3단계 계층 구조를 채택하여 구현되었습니다.
+관리 편의성(정규화)과 검색 속도(비정규화)를 융합한 3단계 계층 구조를 채택하여 구현되었습니다. 인프라는 **ParadeDB**를 기반으로 `pgvector`와 `pg_search`를 활용합니다.
 
 ## 1. 계층 구조 요약
 
@@ -35,13 +35,25 @@
 | :--- | :--- | :--- |
 | id | UUIDField | PK |
 | section | ForeignKey(Section) | N:1 연결 (섹션 정보 포함) |
-| content | TextField | 실제 텍스트 내용 (문맥 주입 포함) |
-| embedding | VectorField(dim=1024) | BGE-M3 기준 1024차원 벡터 데이터 |
+| content | TextField | 실제 텍스트 내용 (**BM25 검색 대상**) |
+| embedding | VectorField(dim=1024) | BGE-M3 기준 1024차원 벡터 (**HNSW 검색 대상**) |
 | token_count | IntegerField | 대략적인 토큰 수 |
 | overlap_index | IntegerField | 중첩 분할 시의 인덱스 |
 
 ## 2. 인덱스 (Index) 전략
 
-*   **벡터 검색**: `Chunk.embedding` 필드에 **HNSW 인덱스**(`chunk_embedding_hnsw_idx`)를 적용하여 코사인 유사도 기반 고속 검색을 지원합니다.
-*   **메타데이터 필터링**: `Document.target_version`, `Document.category` 등에 인덱스를 설정하여 특정 버전/카테고리에 국한된 검색 성능을 최적화합니다.
+### 2.1 벡터 인덱스 (Vector Index)
+*   **유형**: HNSW (Hierarchical Navigable Small World)
+*   **대상**: `Chunk.embedding`
+*   **목적**: 코사인 유사도 기반 고속 벡터 검색 지원.
+*   **파라미터**: `m=16`, `ef_construction=64` (데이터 규모에 따라 조정 가능).
+
+### 2.2 하이브리드 검색 인덱스 (BM25 Index)
+*   **유형**: `pg_search` (ParadeDB BM25 Index)
+*   **대상**: `Chunk.content`
+*   **목적**: 키워드 기반 정밀 검색(BM25) 및 불용어 필터링 지원.
+*   **특이사항**: SQL 레벨에서 벡터 검색 결과와 RRF(Reciprocal Rank Fusion)로 통합 가능.
+
+### 2.3 메타데이터 필터링
+*   **B-Tree Index**: `Document.target_version`, `Document.category` 등에 설정하여 특정 버전/카테고리에 국한된 하이브리드 검색 성능을 최적화합니다.
 *   **Unique 제약**: `source_path`와 `target_version` 조합에 Unique 제약을 걸어 중복 적재를 방지(Upsert 로직 지원)합니다.

@@ -12,12 +12,13 @@ class ChunkingService:
     Phase 2: MarkdownTextSplitter를 통한 코드 블록 보존 및 크기 기반 재분할
     """
 
-    def __init__(self, chunk_size: int = 2500, chunk_overlap: int = 200):
+    def __init__(self, chunk_size: int = 1500, chunk_overlap: int = 200):
         """
         ChunkingService를 초기화합니다.
 
         Args:
-            chunk_size (int): 개별 청크의 최대 문자 길이. 기본값 2500 (bge-m3 최적화).
+            chunk_size (int): 개별 청크의 최대 문자 길이.
+                             리랭커(bge-reranker-base, 512토큰)의 한계에 맞춰 1500으로 최적화.
             chunk_overlap (int): 청크 간 중첩되는 문자 길이. 기본값 200.
         """
         self.chunk_size = chunk_size
