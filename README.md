@@ -79,14 +79,19 @@ uv sync --all-packages
 docker-compose up -d db
 ```
 
-### 2. Django Server 초기화 및 실행
+### 2. 크롤러 실행 (문서 다운로드)
+```bash
+uv run --project crawler python crawler/orm_cookbook.py
+```
+
+### 3. Django Server 초기화 및 실행
 ```bash
 cd django_server
 uv sync
 uv run python src/manage.py migrate
 ```
 
-### 3. 데이터 적재 및 재인덱싱 (Django Command)
+### 4. 데이터 적재 및 재인덱싱 (Django Command)
 ```bash
 # 기존에 적재된 문서들에 대해 멀티벡터 데이터를 일괄 구축합니다.
 uv run python src/manage.py ingest_docs --reindex
@@ -95,7 +100,7 @@ uv run python src/manage.py ingest_docs --reindex
 uv run python src/manage.py ingest_docs ../data_sources/django2-orm-cookbook/ --doc-version 2.2 --category Cookbook
 ```
 
-### 4. 검색 실험실(Playground) 및 평가
+### 5. 검색 실험실(Playground) 및 평가
 ```bash
 uv run python src/manage.py runserver
 ```
