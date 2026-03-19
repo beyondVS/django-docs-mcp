@@ -37,7 +37,7 @@ class SearchService:
             query_multi = embedding_data["multi_vector_bytes"]
 
             # 2. 1차 하이브리드 검색 (Retrieval)
-            rerank_top_n = getattr(settings, "RERANK_TOP_N", 20)
+            rerank_top_n = getattr(settings, "RERANK_TOP_N", 50)
             initial_results = await self.hybrid_search(
                 query=query,
                 query_dense_vector=query_dense,
@@ -77,7 +77,7 @@ class SearchService:
         query_dense_vector: list[float] | None = None,
         target_version: str | None = None,
         category: str | None = None,
-        limit: int = 20,
+        limit: int = 50,
         rrf_k: int = 60,
     ) -> list[dict[str, Any]]:
         """

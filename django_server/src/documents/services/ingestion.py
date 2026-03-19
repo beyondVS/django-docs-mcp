@@ -28,7 +28,7 @@ class IngestionService:
 
     def ingest_file(
         self, file_path: Path, target_version: str = "5.0", category: str = "General"
-    ) -> Document:
+    ) -> Document | None:
         """
         개별 마크다운 파일을 파싱하고 벡터 DB에 적재합니다.
 
@@ -38,12 +38,19 @@ class IngestionService:
             category (str): 문서 카테고리. 기본값 "General".
 
         Returns:
-            Document: 적재된 Document 객체.
+            Document | None: 적재된 Document 객체. 목차 파일인 경우 None 반환.
 
         Raises:
             FileNotFoundError: 파일이 존재하지 않을 때.
             Exception: 임베딩 생성 또는 DB 적재 중 오류 발생 시.
         """
+        # 1. 목차/인덱스 파일 제외 필터링 (최적화)
+        exclude_keywords = ["index", "latest", "toc", "genindex"]
+        filename_lower = file_path.name.lower()
+        if any(kw in filename_lower for kw in exclude_keywords):
+            logger.info(f"Skipping index/meta file: {file_path.name}")
+            return None
+
         if not file_path.exists():
             raise FileNotFoundError(f"파일을 찾을 수 없습니다: {file_path}")
 

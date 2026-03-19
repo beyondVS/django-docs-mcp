@@ -38,7 +38,7 @@ graph TD
 
 - [X] T005 [US1] `django_server/src/documents/services/reranking.py` 신설 및 NumPy 기반의 벡터화된 MaxSim 연산(Mean MaxSim 정규화 및 0.3 임계값 필터링 포함) 구현
 - [X] T006 [US1] `django_server/src/documents/services/embedding.py`를 수정하여 `gpahal/bge-m3-onnx-int8` 모델 로드 및 Dense/Multi-vector 동시 추출 로직 구현
-- [X] T007 [US1] `django_server/src/documents/services/search.py`에 1차 하이브리드 검색 결과 상위 20개를 대상으로 하는 Late Interaction 리랭킹 파이프라인 통합 및 폴백 로직(FR-004) 구현
+- [X] T007 [US1] `django_server/src/documents/services/search.py`에 1차 하이브리드 검색 결과 상위 50개를 대상으로 하는 Late Interaction 리랭킹 파이프라인 통합 및 폴백 로직(FR-004) 구현
 - [X] T008 [US1] `django_server/tests/test_search.py`에 1초 이내 응답 속도, 리랭킹 정밀도 및 search_django_knowledge 규격(SYS-002) 준수 검증 테스트 케이스 추가
 
 ### 4단계: [US2] 하이브리드 검색 관리 현대화 (P2)
