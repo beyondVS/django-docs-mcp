@@ -44,8 +44,9 @@
 | `id` | UUIDField | PK |
 | `section` | ForeignKey | `Section` 테이블과 N:1 연결 (문맥 정보 보존용) |
 | `content` | TextField | 분할된 실제 텍스트 내용 (**BM25 인덱싱 대상**) |
-| `embedding` | VectorField | 1024차원(BGE-M3 기준) 벡터 (**HNSW 인덱싱 대상**) |
-| `token_count` | IntegerField | 모델 추론 제한을 위한 대략적인 토큰 수 |
+| `embedding` | VectorField | 1,024차원 Dense 벡터 (**HNSW 인덱싱 대상**) |
+| **`multi_vector_low_dim`** | **BinaryField** | **Late Interaction 리랭킹용 압축 벡터** (128차원 x N 토큰, int8 양자화) |
+| `token_count` | IntegerField | 실제 유효 토큰 수 (바이너리 역직렬화 가이드) |
 | `overlap_index` | IntegerField | 문맥 중첩(Overlap) 분할 시의 청크 순서 인덱스 |
 
 ---
@@ -67,7 +68,16 @@
 *   **설계 목적:** 단어 출현 빈도 기반의 정밀 키워드 검색(BM25) 및 불용어 필터링을 지원합니다.
 *   **특이사항:** 애플리케이션 레벨이 아닌 SQL 레벨에서 벡터 검색 결과와 RRF(Reciprocal Rank Fusion) 쿼리를 결합하여 네트워크 지연을 최소화합니다.
 
-### 2.3 메타데이터 필터링 및 정합성 인덱스
+### 2.3 리랭킹용 바이너리 저장 규격 (Multi-vector Packing)
+`multi_vector_low_dim` 필드는 검색 시 빠른 로드와 연산을 위해 특수한 바이너리 포맷을 따릅니다.
+
+*   **구조:** `[Token Count (2B)][Vector Data (N * 128B)]`
+*   **압축 기법:**
+    1.  **Matryoshka Slicing:** 1,024차원의 상위 128차원만 추출.
+    2.  **Scalar Quantization:** float32 값을 -128~127 범위의 int8 정수로 캐스팅.
+*   **이점:** 원본 대비 저장 용량을 **32배 압축**하여 DB I/O 부하를 최소화합니다.
+
+### 2.4 메타데이터 필터링 및 정합성 인덱스
 *   **B-Tree Index:** `Document.target_version`, `Document.category` 컬럼 등에 적용합니다.
     특정 버전이나 카테고리로 필터를 걸 때 검색 범위를 대폭 좁혀 성능을 최적화합니다.
 *   **Unique 제약 조건:** `source_path`와 `target_version` 조합에 Unique 제약을 설정합니다.
