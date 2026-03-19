@@ -3,6 +3,7 @@ from typing import TYPE_CHECKING
 
 from django.db import models
 from paradedb import BM25Index
+from paradedb.queryset import ParadeDBManager
 from pgvector.django import HnswIndex, VectorField
 
 if TYPE_CHECKING:
@@ -96,14 +97,19 @@ class Chunk(models.Model):
         max_length=512, blank=True, help_text="검색 성능 향상을 위한 섹션 제목 데이타 (비정규화)"
     )
     embedding = VectorField(dimensions=1024, help_text="BGE-M3 1024차원 벡터 임베딩")
+    multi_vector_low_dim = models.BinaryField(
+        null=True,
+        blank=True,
+        help_text="Late Interaction용 압축 멀티 벡터. 포맷: [TokenCount(2B)][VectorData]",
+    )
     token_count = models.IntegerField(help_text="대략적인 토큰 수")
     overlap_index = models.IntegerField(default=0, help_text="중첩 분할 시의 인덱스")
     created_at = models.DateTimeField(auto_now_add=True)
 
     if TYPE_CHECKING:
-        objects: Manager[Chunk]
+        objects: ParadeDBManager
     else:
-        objects = models.Manager()
+        objects = ParadeDBManager()
 
     class Meta:
         indexes = [

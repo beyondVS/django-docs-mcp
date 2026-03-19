@@ -99,7 +99,8 @@ class IngestionService:
 
                 # 4. 임베딩 생성 및 청크(Chunk) 저장
                 try:
-                    embedding = self.embedding_service.embed_text(chunk_info["content"])
+                    # dense_vector, multi_vector_bytes, token_count 포함 dict 반환
+                    emb_data = self.embedding_service.embed_text(chunk_info["content"])
                 except Exception as e:
                     # T021: 임베딩 실패 시 에러 로깅 후 전파 (트랜잭션 롤백됨)
                     logger.error(f"임베딩 생성 중 치명적 오류 발생: {str(e)}", exc_info=True)
@@ -109,8 +110,9 @@ class IngestionService:
                     section=section,
                     content=chunk_info["content"],
                     section_title=section.title,
-                    embedding=embedding,
-                    token_count=int(chunk_info["metadata"].get("token_count", 0)),
+                    embedding=emb_data["dense_vector"],
+                    multi_vector_low_dim=emb_data["multi_vector_bytes"],
+                    token_count=emb_data["token_count"],
                     overlap_index=int(chunk_info["metadata"].get("chunk_index", 0)),
                 )
 
