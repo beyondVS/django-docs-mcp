@@ -1,6 +1,6 @@
-# django-docs-mcp 개발 가이드라인 (Gemini Context)
+﻿# django-docs-mcp 개발 가이드라인 (Gemini Context)
 
-모든 기능 계획서에서 자동 생성되었습니다. 최종 업데이트: 2026-03-19
+모든 기능 계획서에서 자동 생성되었습니다. 최종 업데이트: 2026-03-20
 
 ## 1. 전역 지침 및 핵심 규칙 (수동 관리)
 
@@ -18,6 +18,8 @@
 ## 2. 프로젝트 현황 (자동 생성)
 
 ## 활성 기술 스택
+- Python 3.14 + `django-paradedb~=0.4.0`, `onnxruntime`, `optimum`, `numpy` (005-optimize-search-rerank)
+- PostgreSQL (ParadeDB: pg_search + pgvector), `bytea` 필드를 통한 멀티벡터 저장 (005-optimize-search-rerank)
 
 - Python 3.14 + Django 5.2 (004-hybrid-search-rerank)
 - PostgreSQL + pgvector & pg_search (004-hybrid-search-rerank)
@@ -55,9 +57,9 @@ D:\Projects\Private\django-docs-mcp\
 - **Type Safety**: 모든 함수와 메서드에 명시적인 Type Hints 적용.
 
 ## 최근 변경 사항
+- 005-optimize-search-rerank: Added Python 3.14 + `django-paradedb~=0.4.0`, `onnxruntime`, `optimum`, `numpy`
 
 - 004-hybrid-search-rerank: PostgreSQL + pgvector를 활용한 하이브리드 검색 및 리랭킹 파이프라인 구축
 - 003-improve-markdown-chunking: langchain-text-splitters를 활용한 2단계 청킹 전략 도입
-- 002-django-server-core: Django 5.2 LTS 기반 검색 서버 코어 및 관리 인터페이스 구현
 
 ---
