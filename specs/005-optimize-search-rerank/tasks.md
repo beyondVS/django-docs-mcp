@@ -36,10 +36,10 @@ graph TD
 
 **목표**: Late Interaction 아키텍처를 도입하여 1초 이내의 고정밀 검색 결과 제공
 
-- [ ] T005 [US1] `django_server/src/documents/services/reranking.py` 신설 및 NumPy 기반의 벡터화된 MaxSim 연산(Mean MaxSim 정규화 포함) 구현
+- [ ] T005 [US1] `django_server/src/documents/services/reranking.py` 신설 및 NumPy 기반의 벡터화된 MaxSim 연산(Mean MaxSim 정규화 및 0.3 임계값 필터링 포함) 구현
 - [ ] T006 [US1] `django_server/src/documents/services/embedding.py`를 수정하여 `gpahal/bge-m3-onnx-int8` 모델 로드 및 Dense/Multi-vector 동시 추출 로직 구현
-- [ ] T007 [US1] `django_server/src/documents/services/search.py`에 1차 하이브리드 검색 결과 상위 20개를 대상으로 하는 Late Interaction 리랭킹 파이프라인 통합
-- [ ] T008 [US1] `django_server/tests/test_search.py`에 1초 이내 응답 속도 및 리랭킹 정밀도 검증을 위한 테스트 케이스 추가
+- [ ] T007 [US1] `django_server/src/documents/services/search.py`에 1차 하이브리드 검색 결과 상위 20개를 대상으로 하는 Late Interaction 리랭킹 파이프라인 통합 및 폴백 로직(FR-004) 구현
+- [ ] T008 [US1] `django_server/tests/test_search.py`에 1초 이내 응답 속도, 리랭킹 정밀도 및 search_django_knowledge 규격(SYS-002) 준수 검증 테스트 케이스 추가
 
 ### 4단계: [US2] 하이브리드 검색 관리 현대화 (P2)
 
@@ -52,4 +52,4 @@ graph TD
 
 - [ ] T011 `django_server/src/documents/management/commands/ingest_docs.py` 수정: 임베딩 시 128차원 축소 및 int8 양자화된 멀티벡터 생성/저장 로직 추가
 - [ ] T012 `uv run python src/manage.py ingest_docs --reindex` 실행하여 전체 문서에 대한 압축 멀티벡터 데이터 구축
-- [ ] T013 `django_server/src/documents/templates/playground/` 웹 UI 업데이트: Rerank Score(Mean MaxSim) 시각화 및 지연 시간 측정 기능 보강
+- [ ] T013 `django_server/src/documents/templates/playground/` 웹 UI 업데이트: 지연 시간(ms) 시각화 및 기존/신규 점수 비교 기능 보강

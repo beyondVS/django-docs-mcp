@@ -5,7 +5,7 @@
 
 ## 요약
 
-현재 CPU 환경에서 1.5초가 소요되는 `bge-reranker-base`(Cross-Encoder) 기반 리랭킹 시스템을 `gpahal/bge-m3-onnx-int8` 모델 기반의 **Late Interaction(ColBERT-style)** 아키텍처로 전환하여 응답 속도를 **1초 이내(기대치 300ms 내외)**로 개선합니다. `django-paradedb`를 도입하여 하이브리드 검색 코드를 ORM 스타일로 현대화하고, 128차원/int8 멀티 벡터 압축 저장 전략을 통해 성능과 저장 공간의 효율을 극대화합니다.
+현재 CPU 환경에서 1.5초가 소요되는 `bge-reranker-base`(Cross-Encoder) 기반 리랭킹 시스템을 `gpahal/bge-m3-onnx-int8` 모델 기반의 **Late Interaction(ColBERT-style)** 아키텍처로 전환하여 응답 속도를 **1초 이내(기대치 300ms 내외)**로 개선합니다. `django-paradedb`를 도입하여 기존 후보군(20개) 규모를 유지하면서 하이브리드 검색 코드를 ORM 스타일로 현대화하고, 128차원/int8 멀티 벡터 압축 저장 전략을 통해 성능과 저장 공간의 효율을 극대화합니다.
 
 ## 기술적 문맥 (Technical Context)
 
