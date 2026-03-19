@@ -1,6 +1,6 @@
 # Django Docs MCP (Model Context Protocol)
 
-AI 에이전트를 위한 RAG 기반 Django 공식 문서 검색 MCP 서버. FastMCP와 pgvector를 활용하여 환각(Hallucination) 없는 정확한 레퍼런스 및 코드 검색 환경을 제공합니다.
+AI 에이전트를 위한 RAG 기반 Django 공식 문서 검색 MCP 서버. FastMCP와 ParadeDB를 활용하여 환각(Hallucination) 없는 정확한 레퍼런스 및 코드 검색 환경을 제공합니다.
 
 ## 🎯 왜 이 프로젝트가 필요한가요? (Why)
 
@@ -12,25 +12,25 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 
 시스템의 무결성과 확장성을 위해 **데이터 적재(Ingestion)** 파트와 **데이터 제공(Serving)** 파트를 분리하여 설계했습니다.
 
-1. **지식 베이스 구축 (Django Server):** 크롤링된 마크다운 문서를 **2단계 논리적 청킹(Semantic Chunking)** 전략을 통해 헤더 구조와 코드 블록 무결성을 보존하며 임베딩합니다. 벡터 데이터베이스(PostgreSQL + pgvector)에 적재된 데이터는 관리자 웹 UI(Playground)를 통해 검색 품질을 시각적으로 테스트하고 튜닝할 수 있습니다.
-2. **AI 에이전트 연동 (MCP Server):** AI 에이전트는 FastMCP 기반 서버에 질의를 보냅니다. 서버는 HNSW 인덱스를 활용해 고속으로 관련 문서 청크를 검색하고 응답하여, AI가 문맥을 잃지 않도록 돕습니다.
+1. **지식 베이스 구축 (Django Server):** 크롤링된 마크다운 문서를 **2단계 논리적 청킹(Semantic Chunking)** 전략을 통해 헤더 구조와 코드 블록 무결성을 보존하며 임베딩합니다. 특히 **gpahal/bge-m3-onnx-int8** 단일 모델을 사용하여 Dense 벡터와 Late Interaction용 멀티벡터를 동시에 생성 및 저장합니다.
+2. **AI 에이전트 연동 (MCP Server):** AI 에이전트는 FastMCP 기반 서버에 질의를 보냅니다. 서버는 **하이브리드 리트리벌(BM25 + Vector)**과 **Late Interaction(MaxSim)** 리랭킹을 통해 0.3초 이내의 고속 응답으로 관련 문서 청크를 반환합니다.
 
 ## ✨ 주요 특징 (Key Features)
 
-* **하이브리드 검색 (BM25 + Vector)**: PostgreSQL의 `pg_search`를 활용한 키워드 검색(BM25)과 `pgvector` 기반의 벡터 검색을 RRF(Reciprocal Rank Fusion) 알고리즘으로 통합하여 검색 정확도를 극대화했습니다.
-* **ONNX 기반 Reranking**: 하이브리드 검색 후보군(Top-10)을 대상으로 `bge-reranker-base` 모델을 ONNX Runtime에서 실행하여 질의와의 관련성을 정밀하게 재평가합니다.
+* **하이브리드 검색 (BM25 + Vector)**: `django-paradedb`를 활용하여 키워드 검색(BM25)과 `pgvector` 기반의 벡터 검색을 RRF(Reciprocal Rank Fusion) 알고리즘으로 통합하여 검색 정확도를 극대화했습니다.
+* **고성능 Late Interaction 리랭킹**: 실시간 문서 재임베딩 오버헤드를 제거하기 위해, 미리 저장된 128차원 압축 멀티벡터와 질문 벡터 간의 **MaxSim(최대 유사도 합)** 연산을 수행합니다. (지연 시간 1.5s → 0.3s 단축)
+* **단일 모델 통합 추론**: 하나의 `int8` 양자화 모델로 임베딩과 리랭킹을 모두 처리하여 메모리 효율을 높이고 추론 속도를 최적화했습니다.
 * **의미론적 2단계 청킹**: `MarkdownHeaderTextSplitter`로 문서 구조(H1~H3)를 파싱하고, `MarkdownTextSplitter`로 코드 블록을 보호하며 재분할하는 정교한 파이프라인을 제공합니다.
 * **코드 블록 무결성 보장**: `bge-m3` 모델의 넓은 컨텍스트(8,192 토큰)를 활용하여, 긴 파이썬 예제 코드도 잘림 없이 온전한 형태로 검색 결과에 제공합니다.
-* **데이터 순수성 유지**: 청크 본문에 인위적인 컨텍스트 정보를 주입하지 않고 순수 마크다운만 유지함으로써 임베딩 품질을 높이고 데이터 원본성을 확보했습니다.
 
 ## 🛠 기술 스택 (What)
 
 * **Vector Database:** PostgreSQL + `pg_search` + `pgvector` (ParadeDB 공식 이미지 활용)
 * **Serving Layer:** Python `FastMCP` (비동기 지원 및 경량화 MCP 서버)
-* **Ingestion & Testing:** Django (안정적인 Admin 제공 및 Playground 검색 튜닝 UI)
+* **Ingestion & Testing:** Django 5.2 LTS (하이브리드 검색 및 Late Interaction 엔진)
 * **Models & Runtime:**
-    * **Embedding:** `BAAI/bge-m3` (ONNX 기반 가속, 1024차원)
-    * **Reranker:** `keisuke-miyako/bge-reranker-base-onnx-int8` (CPU 최적화 INT8 양자화 모델)
+    * **Embedding & Reranking:** `gpahal/bge-m3-onnx-int8` (통합 INT8 양자화 모델)
+    * **Architecture:** Late Interaction (ColBERT-style)
     * **Runtime:** `ONNX Runtime` (CPU 환경 최적화 및 고속 추론)
 * **Infrastructure:** Docker & Docker Compose (격리된 로컬 환경 및 배포 용이성)
 
@@ -40,7 +40,7 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 .
 ├── crawler/            # 외부 웹/문서 크롤링 및 로컬 볼륨 마운트용 스크립트
 ├── data_sources/       # 크롤링된 로컬 마크다운/문서 원본 저장소 (버전 관리 제외)
-├── django_server/      # [Ingestion] 문서 파싱, 청킹, 임베딩, 하이브리드 검색 및 Rerank
+├── django_server/      # [Ingestion] 문서 파싱, 청킹, 임베딩, 하이브리드 검색 및 Late Interaction 리랭킹
 ├── mcp_server/         # [Serving] AI 에이전트 질의 응답용 FastMCP 서버
 ├── specs/              # 시스템 아키텍처 및 데이터베이스 상세 설계 문서
 ├── .gemini/            # Gemini CLI 전용 워크플로우 및 스킬 설정
@@ -53,7 +53,7 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 
 * [프로젝트 기획서](./specs/_architecture/project_proposal.md)
 * [시스템 아키텍처 설계서](./specs/_architecture/architecture_design.md)
-* [기술 스택 선정 근거서](./specs/_architecture/tech_stack_rationale.md)
+* [기술 스택 선정 근거 및 진화 이력](./specs/_architecture/tech_stack_rationale.md)
 * [기술적 배경 및 핵심 개념](./specs/_architecture/technical_background.md)
 * [데이터베이스 스키마 설계](./specs/_architecture/database_schema.md)
 * [임베딩 및 리트리벌 전략](./specs/_architecture/embedding_strategy.md)
@@ -86,17 +86,20 @@ uv sync
 uv run python src/manage.py migrate
 ```
 
-# 3. 데이터 적재 및 임베딩 (Django Command)
+### 3. 데이터 적재 및 재인덱싱 (Django Command)
 ```bash
-# data_sources/django2-orm-cookbook 폴더 내의 마크다운 파일을 적재 (ONNX 기반 임베딩 자동 수행)
+# 기존에 적재된 문서들에 대해 멀티벡터 데이터를 일괄 구축합니다.
+uv run python src/manage.py ingest_docs --reindex
+
+# 특정 경로의 마크다운 파일을 신규 적재합니다.
 uv run python src/manage.py ingest_docs ../data_sources/django2-orm-cookbook/ --doc-version 2.2 --category Cookbook
 ```
 
-# 4. 검색 실험실(Playground) 및 평가
+### 4. 검색 실험실(Playground) 및 평가
 ```bash
 uv run python src/manage.py runserver
 ```
-- **Playground 접속**: `http://127.0.0.1:8000/playground/` (하이브리드 검색 및 Rerank 점수 확인 가능)
+- **Playground 접속**: `http://127.0.0.1:8000/playground/` (하이브리드 및 MaxSim 점수 확인 가능)
 - **품질 평가 실행**: `uv run python scripts/evaluate_search.py` (MRR, Hit Rate 지표 분석)
 
 ## 📅 로드맵 및 진행 현황
@@ -105,7 +108,7 @@ uv run python src/manage.py runserver
 - [x] **Phase 2: Django Server (Ingestion & Search Engine)**
     - [x] pgvector 기반 텍스트 청킹 및 임베딩 파이프라인
     - [x] 하이브리드 검색 엔진 (BM25 + Vector + RRF) 구축
-    - [x] ONNX Runtime 기반 Reranker 통합
+    - [x] Late Interaction(MaxSim) 기반 고속 리랭커 통합
     - [x] 검색 품질 평가 프레임워크 구축 (MRR 지표 검증)
     - [x] 검색 품질 테스트용 웹 UI (Playground)
 - [ ] **Phase 3: MCP Server (Serving)**
