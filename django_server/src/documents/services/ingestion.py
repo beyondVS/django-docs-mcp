@@ -44,13 +44,6 @@ class IngestionService:
             FileNotFoundError: 파일이 존재하지 않을 때.
             Exception: 임베딩 생성 또는 DB 적재 중 오류 발생 시.
         """
-        # 1. 목차/인덱스 파일 제외 필터링 (최적화)
-        exclude_keywords = ["index", "latest", "toc", "genindex"]
-        filename_lower = file_path.name.lower()
-        if any(kw in filename_lower for kw in exclude_keywords):
-            logger.info(f"Skipping index/meta file: {file_path.name}")
-            return None
-
         if not file_path.exists():
             raise FileNotFoundError(f"파일을 찾을 수 없습니다: {file_path}")
 
@@ -65,6 +58,18 @@ class IngestionService:
         version: str = str(metadata.get("target_version", target_version))
         doc_category: str = str(metadata.get("category", category))
         source_url: str = str(metadata.get("source_url", ""))
+
+        # 1. 목차/인덱스 파일 제외 필터링 (최적화)
+        exclude_keywords = ["index", "latest", "toc", "genindex"]
+        filename_lower = file_path.name.lower()
+        if any(kw in filename_lower for kw in exclude_keywords):
+            logger.info(f"Skipping index/meta file: {file_path.name}")
+            # 필터링되어 스킵하더라도, DB에 해당 파일/버전이 이미 있다면
+            # 삭제하여 찌꺼기가 남지 않게 함
+            Document.objects.filter(
+                source_path=str(file_path.absolute()), target_version=version
+            ).delete()
+            return None
 
         with transaction.atomic():
             # T011: 기존 동일 경로/버전 문서 삭제 (Upsert 효과)
