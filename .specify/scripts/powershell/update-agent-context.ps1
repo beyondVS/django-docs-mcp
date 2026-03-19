@@ -139,7 +139,7 @@ function Extract-PlanField {
     Get-Content -LiteralPath $PlanFile -Encoding utf8 | ForEach-Object {
         if ($_ -match $regex) {
             $val = $Matches[1].Trim()
-            if ($val -notin @('NEEDS CLARIFICATION','N/A')) { return $val }
+            if ($val -notin @('NEEDS CLARIFICATION','N/A','확인 필요','해당 없음')) { return $val }
         }
     } | Select-Object -First 1
 }
