@@ -99,9 +99,12 @@ class SearchService:
 
         # 1. BM25 검색 (ParadeDB)
         def get_bm25() -> list[Chunk]:
+            bm25_filter = Q(content=ParadeDB(Match(query, operator="OR"))) | Q(
+                section_title=ParadeDB(Match(query, operator="OR", boost=3.0))
+            )
             return list(
                 Chunk.objects.filter(base_filter)
-                .filter(content=ParadeDB(Match(query, operator="OR")))
+                .filter(bm25_filter)
                 .annotate(bm25_score=Score())
                 .select_related("section", "section__document")
                 .order_by("-bm25_score")[:limit]
