@@ -8,7 +8,7 @@
 
 ## 기술적 문맥 (Technical Context)
 
-**언어/버전**: Python 3.14 (Type 준수)
+**언어/버전**: Python 3.13 (Type 준수)
 **주요 의존성**: `langchain-text-splitters~=1.1.1`
 **저장소**: PostgreSQL + pgvector (기존 Chunk/Document 모델 유지)
 **테스트**: `pytest` (새로운 `tests/test_chunking.py` 추가)

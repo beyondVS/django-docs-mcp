@@ -9,7 +9,7 @@
 
 ## 기술적 문맥 (Technical Context)
 
-**언어/버전**: Python 3.14
+**언어/버전**: Python 3.13
 **주요 의존성**: `django-paradedb~=0.4.0`, `onnxruntime`, `optimum`, `numpy`
 **저장소**: PostgreSQL (ParadeDB: pg_search + pgvector), `bytea` 필드를 통한 멀티벡터 저장
 **테스트**: `pytest`

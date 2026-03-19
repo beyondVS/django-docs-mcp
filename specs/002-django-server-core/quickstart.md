@@ -3,7 +3,7 @@
 `django_server` 멤버 프로젝트의 개발 환경 설정 및 데이터 적재 과정을 안내합니다.
 
 ## 1. 전제 조건 (Prerequisites)
-- **Python**: 3.14 (uv 권장)
+- **Python**: 3.13 (uv 권장)
 - **Docker**: Docker Desktop (PostgreSQL + pgvector 구동 필요)
 - **Repo**: `django-docs-mcp` 저장소 루트
 

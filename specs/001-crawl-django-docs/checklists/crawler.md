@@ -33,5 +33,5 @@
 
 ## 종속성 및 가정 (Dependencies & Assumptions)
 
-- [ ] CHK013 - Python 3.14 환경에서 `lxml` 및 `readability-lxml` 빌드 실패 시의 대체 의존성 또는 빌드 환경 가정이 문서화되었습니까? [가정, Plan §Technical Context]
+- [ ] CHK013 - Python 3.13 환경에서 `lxml` 및 `readability-lxml` 빌드 실패 시의 대체 의존성 또는 빌드 환경 가정이 문서화되었습니까? [가정, Plan §Technical Context]
 - [ ] CHK014 - 대상 사이트(Agiliq)의 정적 HTML 구조가 크롤링 도중 변경되지 않는다는 가정이 명시되었습니까? [가정]

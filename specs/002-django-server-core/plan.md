@@ -8,7 +8,7 @@
 
 ## 기술적 문맥 (Technical Context)
 
-**언어/버전**: Python 3.14 (uv 권장)
+**언어/버전**: Python 3.13 (uv 권장)
 **주요 의존성**:
   - Django 5.2.x (LTS - 2028년까지 지원 보장)
   - psycopg[binary] >= 3.2.1 (최신 비동기 드라이버, C-Extension 포함으로 속도 최적화)

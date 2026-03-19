@@ -13,7 +13,7 @@
 
 - [x] T001 [P] `crawler/` 및 `crawler/utils/` 디렉토리 구조 생성
 - [x] T002 [P] `pyproject.toml`에 `httpx`, `readability-lxml`, `markdownify`, `tenacity`, `PyYAML`, `beautifulsoup4`, `lxml` 의존성 추가 및 `uv sync` 실행
-- [x] T003 [P] `.ruff.toml` 또는 `pyproject.toml`에 Python 3.14 타입 체크 및 린팅 설정 추가
+- [x] T003 [P] `.ruff.toml` 또는 `pyproject.toml`에 Python 3.13 타입 체크 및 린팅 설정 추가
 
 ---
 
