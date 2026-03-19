@@ -81,7 +81,12 @@ docker-compose up -d db
 
 ### 2. 크롤러 실행 (문서 다운로드)
 ```bash
-uv run --project crawler python crawler/orm_cookbook.py
+cd crawler
+# Django ORM Cookbook
+uv run python orm_cookbook.py
+# Django Admin Cookbook
+uv run python admin_cookbook.py
+cd ..
 ```
 
 ### 3. Django Server 초기화 및 실행
@@ -97,7 +102,10 @@ uv run python src/manage.py migrate
 uv run python src/manage.py ingest_docs --reindex
 
 # 특정 경로의 마크다운 파일을 신규 적재합니다.
+# ORM Cookbook
 uv run python src/manage.py ingest_docs ../data_sources/django2-orm-cookbook/ --doc-version 2.2 --category Cookbook
+# Admin Cookbook
+uv run python src/manage.py ingest_docs ../data_sources/django-admin-cookbook/ --doc-version 2.2 --category Cookbook
 ```
 
 ### 5. 검색 실험실(Playground) 및 평가

@@ -25,7 +25,7 @@ class Scraper:
         self.semaphore = asyncio.Semaphore(concurrency_limit)
         self.client = httpx.AsyncClient(timeout=30.0, follow_redirects=True)
 
-    async def close(self):
+    async def close(self) -> None:
         """HTTP 클라이언트 자원을 정리합니다."""
         await self.client.aclose()
 
