@@ -1,87 +1,119 @@
+import logging
+import struct
 from typing import Any
 
-import torch
-from optimum.onnxruntime import ORTModelForSequenceClassification
-from transformers import AutoTokenizer
+import numpy as np
+from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 class RerankingService:
     """
-    검색 결과의 정밀도를 향상시키기 위해 Reranker 모델을 실행하는 서비스 클래스.
+    Late Interaction (ColBERT 스타일) 리랭킹 서비스.
 
-    keisuke-miyako/bge-reranker-base-onnx-int8 모델을 사용하여
-    질문과 문서 청크 간의 관련성 점수를 정밀하게 재산출합니다.
+    사전 저장된 멀티 벡터와 질문 멀티 벡터 간의 MaxSim 연산을 수행하여
+    검색 결과의 순위를 재정렬합니다.
     """
 
-    _instance: RerankingService | None = None
-    _model: ORTModelForSequenceClassification | None = None
-    _tokenizer: Any = None
+    def __init__(self) -> None:
+        self.dim = getattr(settings, "LATE_INTERACTION_DIM", 128)
+        self.threshold = getattr(settings, "LATE_INTERACTION_THRESHOLD", 0.3)
 
-    def __new__(cls) -> RerankingService:
+    def compute_maxsim(self, query_multi_vector: bytes, document_multi_vector: bytes) -> float:
         """
-        RerankingService의 싱글톤 인스턴스를 생성하거나 반환합니다.
+        두 멀티 벡터 간의 MaxSim 점수를 계산합니다.
         """
-        if cls._instance is None:
-            instance = super().__new__(cls)
-            cls._instance = instance
-            # BGE Reranker Base INT8 양자화 모델 활용 (CPU 최적화의 정점)
-            model_id = "keisuke-miyako/bge-reranker-base-onnx-int8"
+        # 1. 바이너리 언패킹
+        q_tokens, q_vecs = self._unpack_vector(query_multi_vector)
+        d_tokens, d_vecs = self._unpack_vector(document_multi_vector)
 
-            # 1. 토크나이저 로드
-            cls._tokenizer = AutoTokenizer.from_pretrained(model_id)
+        if q_tokens == 0 or d_tokens == 0:
+            return 0.0
 
-            # 2. ONNX Reranker 모델 로드
-            # 해당 레포지토리의 양자화된 모델 파일명을 직접 지정합니다.
-            cls._model = ORTModelForSequenceClassification.from_pretrained(
-                model_id, provider="CPUExecutionProvider", file_name="model_quantized.onnx"
-            )
-        return cls._instance
+        # 2. MaxSim 연산 (NumPy 가속)
+        q_vecs_f = q_vecs.astype(np.float32) / 127.0
+        d_vecs_f = d_vecs.astype(np.float32) / 127.0
 
-    def rerank(self, query: str, documents: list[str]) -> list[float]:
+        scores = q_vecs_f @ d_vecs_f.T
+        max_scores_per_query_token = np.max(scores, axis=1)
+
+        # 3. 정규화 (Mean MaxSim)
+        total_maxsim = np.sum(max_scores_per_query_token)
+        mean_maxsim = float(total_maxsim / q_tokens)
+
+        return mean_maxsim
+
+    def rerank(
+        self, query_multi_vector: bytes, candidates: list[dict[str, Any]]
+    ) -> list[dict[str, Any]]:
         """
-        사용자 질의와 문서 리스트에 대해 관련성 점수를 산출합니다.
+        후보군에 대해 리랭킹을 수행합니다.
 
         Args:
-            query (str): 사용자 질문.
-            documents (list[str]): 재정렬할 문서 청크 본문 리스트.
+            query_multi_vector: 질문 멀티 벡터
+            candidates: 검색 후보 리스트. 각 항목은 'multi_vector_low_dim' 필드를 포함해야 함.
 
         Returns:
-            list[float]: 각 문서에 대한 유사도 점수 리스트 (Sigmoid 적용, 0~1).
+            list: 리랭킹 및 필터링된 결과 리스트
         """
-        tokenizer = self._tokenizer
-        model = self._model
+        reranked_results = []
 
-        if model is None or tokenizer is None:
-            raise RuntimeError("Reranker 모델 또는 토크나이저가 로드되지 않았습니다.")
+        for cand in candidates:
+            doc_multi_vec = cand.get("multi_vector_low_dim")
+            if not doc_multi_vec:
+                # 데이터 누락 시 기본 점수 유지 (또는 0점 처리)
+                cand["rerank_score"] = 0.0
+                reranked_results.append(cand)
+                continue
 
-        if not documents:
-            return []
+            try:
+                score = self.compute_maxsim(query_multi_vector, doc_multi_vec)
+                # 임계값 필터링 (FR-006)
+                if score >= self.threshold:
+                    cand["rerank_score"] = score
+                    # 최종 similarity 점수를 rerank 점수로 업데이트
+                    cand["similarity"] = score
+                    # extra_meta에도 저장 (응답 규격 준수)
+                    if "extra_meta" not in cand:
+                        cand["extra_meta"] = {}
+                    cand["extra_meta"]["rerank_score"] = score
 
-        # 1. 질문-문서 쌍 생성
-        pairs = [[query, doc] for doc in documents]
+                    reranked_results.append(cand)
+            except Exception as e:
+                logger.error(f"Error computing MaxSim for chunk {cand.get('id')}: {str(e)}")
+                # 오류 발생 시 해당 항목 건너뛰거나 하이브리드 점수 유지 (폴백은 호출부에서 처리)
+                cand["rerank_score"] = 0.0
+                reranked_results.append(cand)
 
-        # 2. 토큰화 (Cross-Encoder 입력 형식)
-        inputs = tokenizer(
-            pairs, padding=True, truncation=True, max_length=512, return_tensors="pt"
+        # 점수 순으로 정렬
+        reranked_results.sort(key=lambda x: x.get("rerank_score", 0.0), reverse=True)
+        return reranked_results
+
+    def _unpack_vector(self, packed_data: bytes) -> tuple[int, np.ndarray]:
+        """바이너리 패킹된 데이터를 NumPy 배열로 복원합니다."""
+        if not packed_data or len(packed_data) < 2:
+            return 0, np.array([], dtype=np.int8)
+
+        # 1. 토큰 수 추출 (첫 2바이트)
+        token_count = struct.unpack("<H", packed_data[:2])[0]
+
+        # 2. 벡터 데이터 추출
+        expected_size = token_count * self.dim
+        actual_size = len(packed_data) - 2
+
+        if actual_size < expected_size:
+            # 데이터 손상 시 가능한 만큼만 처리하거나 에러 발생
+            token_count = actual_size // self.dim
+            expected_size = token_count * self.dim
+
+        vector_data = np.frombuffer(packed_data[2 : 2 + expected_size], dtype=np.int8).reshape(
+            token_count, self.dim
         )
 
-        # 3. 추론 실행
-        with torch.no_grad():
-            outputs = model(**inputs)
-
-        # 4. 점수 추출 및 정규화
-        # BGE Reranker는 단일 로짓(Logit)을 반환함
-        logits = outputs.logits.view(-1).float()
-        scores = torch.sigmoid(logits)
-
-        return [float(s) for s in scores.tolist()]
+        return token_count, vector_data
 
 
 def get_reranking_service() -> RerankingService:
-    """
-    RerankingService 인스턴스를 가져오는 헬퍼 함수.
-
-    Returns:
-        RerankingService: 초기화된 리랭킹 서비스.
-    """
+    """RerankingService 인스턴스를 반환합니다."""
     return RerankingService()

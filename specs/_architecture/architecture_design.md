@@ -18,8 +18,8 @@
 | **Infra** | Docker & Docker Compose | ParadeDB 공식 이미지 활용 및 컨테이너 기반 독립 환경 구성 |
 
 **AI 모델 및 런타임 (Models & Runtime)**
-*   **Embedding:** `BAAI/bge-m3` (ONNX Runtime 가속, 1024 차원 벡터)
-*   **Reranker:** `keisuke-miyako/bge-reranker-base-onnx-int8` (ONNX INT8 양자화)
+*   **Embedding & Reranking:** **`gpahal/bge-m3-onnx-int8`** (단일 모델 통합)
+*   **Optimization:** **Late Interaction (MaxSim)** 아키텍처 적용
 *   **Runtime:** ONNX Runtime (순수 CPU 환경 최적화)
 
 ---
@@ -30,24 +30,17 @@
 
 ### Phase 1: MVP (분리형 수동 파이프라인)
 *   **크롤러 스크립트:** 외부 웹/문서를 다운로드한 후, 컨테이너 내부의 공유 볼륨(로컬 파일)에 저장합니다.
-*   **Django Command:** `python manage.py ingest_docs` 등의 명령어를 실행하여 로컬 파일을 읽습니다.
-    이후 마크다운 파싱 및 청킹을 수행하고, `bge-m3` ONNX 모델로 임베딩을 생성하여
-    PostgreSQL(`pgvector`)에 INSERT 합니다.
+*   **Django Command:** 마크다운 파싱 및 청킹을 수행하고, `int8` ONNX 모델로 임베딩을 생성하여 PostgreSQL에 저장합니다.
 
-### Phase 2: 검색 품질 고도화 (하이브리드 & Rerank)
-*   **Hybrid Retrieval:** 에이전트 또는 사용자(Playground)의 질의가 발생하면,
-    BM25 키워드 검색과 벡터 유사도 검색을 병렬로 수행합니다.
-*   **RRF 통합:** 두 검색 결과의 점수 스케일 차이를 극복하기 위해,
-    RRF(Reciprocal Rank Fusion) 알고리즘으로 순위를 결합하여 상위 후보군(Top 10~20)을 추출합니다.
-*   **ONNX Reranking:** 추출된 1차 후보군을 대상으로 Reranker 모델을 실행하여,
-    질문과의 문맥적 관련성을 정밀하게 재계산합니다.
-*   **Playground:** 하이브리드 점수와 Rerank 점수를 시각적으로 비교 분석하고,
-    MRR 등 품질 평가 지표를 산출하여 검색 로직을 튜닝합니다.
+### Phase 2: 검색 품질 고도화 (하이브리드 & Late Interaction)
+*   **Hybrid Retrieval:** `django-paradedb`를 통해 BM25와 1,024차원 Dense 벡터 검색을 결합한 RRF 순위를 산출합니다.
+*   **Late Interaction Reranking:**
+    *   인제션 시점에 **128차원으로 압축된 멀티 벡터**를 DB에 사전 저장합니다.
+    *   검색 시 질문의 멀티 벡터와 DB의 벡터 간 **MaxSim 연산**을 수행하여 정밀한 최종 순위를 도출합니다.
+*   **성능 달성:** 실시간 모델 추론 오버헤드를 제거하여 1.5초 지연을 **0.3초 수준**으로 개선합니다.
 
 ### Phase 3: 데이터 제공 (Serving - MCP 인터페이스)
-*   **Data Serving:** AI 에이전트의 질의가 FastMCP 서버로 수신됩니다.
-    FastMCP는 내부적으로 Django Search Service(하이브리드 + Rerank 파이프라인)를 호출하여,
-    최종적으로 검증된 고품질 검색 결과를 에이전트에게 반환합니다.
+*   **Data Serving:** FastMCP 서버가 Django Search Service(Hybrid + Late Interaction)를 호출하여 최종 검색 결과를 에이전트에게 반환합니다.
 
 ---
 
@@ -76,17 +69,13 @@ graph TD
         subgraph Ingestion_Layer [데이터 수집 및 적재 계층]
             direction TB
             Crawler[1. Crawler Script]:::worker
-            LocalFile[(2. 로컬 마크다운 파일)]:::file
             DjangoCmd[3. Django Ingestion Command]:::worker
-
-            Crawler -- "수집" --> LocalFile
-            LocalFile -- "파싱/청킹" --> DjangoCmd
+            Crawler -- "수집" --> DjangoCmd
         end
 
         %% 모델 런타임
         subgraph Model_Runtime [ONNX Runtime]
-            EmbedModel[bge-m3 Embedding]:::model
-            RerankModel[bge-reranker Reranking]:::model
+            Model[gpahal/bge-m3-onnx-int8]:::model
         end
 
         %% 데이터베이스 파트
@@ -98,7 +87,7 @@ graph TD
         subgraph Logic_Layer [Django Search Engine]
             direction TB
             SearchService["Hybrid Search Service<br/>(BM25 + Vector + RRF)"]:::web
-            RerankService["Reranking Service<br/>(ONNX Refinement)"]:::web
+            RerankService["Late Interaction Engine<br/>(MaxSim 연산)"]:::web
             DjangoWeb["Admin & Playground UI"]:::web
         end
 
@@ -107,11 +96,11 @@ graph TD
             FastMCP[FastMCP Server]:::mcp
         end
 
-        DjangoCmd -- "임베딩 생성" --> EmbedModel
-        EmbedModel -- "Vector Insert" --> PG
+        DjangoCmd -- "Dense + Multi-vector 생성" --> Model
+        Model -- "Store Vector/Bytea" --> PG
         SearchService -- "Hybrid Query" --> PG
         SearchService -- "Top-N 후보 전달" --> RerankService
-        RerankService -- "Score 산출" --> RerankModel
+        RerankService -- "Fetch Multi-vector" --> PG
         FastMCP -- "검색 요청" --> SearchService
         DjangoWeb -- "모니터링/테스트" --> SearchService
     end

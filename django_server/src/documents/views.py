@@ -1,3 +1,5 @@
+import time
+
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import render
 from django.views.decorators.http import require_GET
@@ -59,11 +61,20 @@ async def search_results(request: HttpRequest) -> HttpResponse:
 
     # 검색 서비스 호출
     search_service = get_search_service()
+
+    start_time = time.time()
     results = await search_service.search(
         query=query,
         target_version=target_version if target_version != "All" else None,
         category=category if category != "All" else None,
         limit=5,
     )
+    end_time = time.time()
+    latency_ms = round((end_time - start_time) * 1000, 2)
 
-    return render(request, "playground/results.html", {"results": results, "query": query})
+    context = {
+        "results": results,
+        "query": query,
+        "latency_ms": latency_ms,
+    }
+    return render(request, "playground/results.html", context)

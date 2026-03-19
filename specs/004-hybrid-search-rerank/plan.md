@@ -8,7 +8,7 @@ PostgreSQL의 `pg_search` 확장을 도입하여 BM25 키워드 검색을 구현
 
 ## 기술적 문맥 (Technical Context)
 
-**언어/버전**: Python 3.14
+**언어/버전**: Python 3.13
 **주요 의존성**: `optimum[onnxruntime]~=1.24.0`, `transformers~=4.48.0`, `pg_search` (ParadeDB), `pgvector`
 **저장소**: PostgreSQL (paradedb/paradedb:latest-pg18 공식 이미지)
 **테스트**: `pytest` (신규 평가 데이터셋 포함)

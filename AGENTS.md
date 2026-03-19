@@ -24,6 +24,7 @@
 *   **커스텀 커맨드 활용**: 프로젝트 설계 및 구현 워크플로우를 위해 `.gemini/commands/speckit.*.toml` 커스텀 커맨드(예: `/plan`, `/implement`, `/tasks`)를 적극 활용하십시오.
 *   **최소 변경의 원칙**: 요청받은 기능 구현에 꼭 필요한 코드만 수정하며, 임의의 포맷팅 변경을 지양합니다.
 *   **Django 마이그레이션 도구 사용**: 마이그레이션 파일은 절대 직접 작성하지 않으며, 모델 변경 후 반드시 `manage.py makemigrations` 명령어를 통해 생성합니다. 생성 후에는 `models.py`의 설정이 정확히 반영되었는지 검토합니다.
+*   **성능 목표 준수**: 검색 시스템 작업 시, 전체 응답 지연 시간을 **0.3~1.0초 이내**로 유지하는 최적화 구조(Late Interaction 등)를 최우선으로 고려하십시오.
 *   **컨텍스트 유지**: 대화가 길어질 경우 주기적으로 핵심 맥락을 요약하고 프로젝트 헌법을 재참조합니다.
 *   **결정의 근거 설명**: 기술적 선택 시 "무엇(What)"을 했는지보다 **"왜(Why)"** 그렇게 결정했는지를 설명하여 이해관계자의 판단을 돕습니다.
 
@@ -34,12 +35,12 @@
 특정 역할을 부여받거나 해당 영역의 작업을 수행할 경우, 반드시 아래 경로의 개별 지침(Persona)을 우선적으로 읽고 따라야 합니다.
 
 *   **@ProductAnalyst**: [요구사항 분석](.gemini/skills/product-analyst/SKILL.md) - 비즈니스 요구사항을 분석하고 기능 명세 및 사용자 스토리를 정의함.
-*   **@Architect**: [설계 및 기술 판단](.gemini/skills/architect/SKILL.md) - 시스템 아키텍처 설계, 기술 의사결정 및 `_architecture` 설계 문서의 진화를 주도함.
-*   **@FrontendDev**: [화면 및 클라이언트 구현](.gemini/skills/frontend-dev/SKILL.md) - 사용자 인터페이스(UI) 및 경험(UX)을 구현하고 검색 실험실(Playground)을 고도화함.
-*   **@BackendDev**: [API 및 서버 로직 구현](.gemini/skills/backend-dev/SKILL.md) - Django 기반 검색 엔진 코어 로직, 하이브리드 검색 및 리랭킹 파이프라인을 구현함.
-*   **@DataArchitect**: [데이터 및 모델링](.gemini/skills/data-architect/SKILL.md) - 데이터베이스 스키마 설계, 벡터 데이터 계층화 및 데이터 무결성을 관리함.
-*   **@DevOps**: [인프라 및 배포](.gemini/skills/devops/SKILL.md) - Docker 기반 인프라 구성, CI/CD 자동화 및 MCP 서버의 안정적인 배포를 책임짐.
+*   **@Architect**: [설계 및 기술 판단](.gemini/skills/architect/SKILL.md) - 시스템 아키텍처 설계, 기술 의사결정 및 `_architecture` 설계 문서의 진화를 주도함. 특히 **단일 모델 통합 추론(Single-Model Strategy)** 및 **Late Interaction** 설계 원칙을 준수함.
+*   **@FrontendDev**: [화면 및 클라이언트 구현](.gemini/skills/frontend-dev/SKILL.md) - 사용자 인터페이스(UI) 및 경험(UX)을 구현하고 검색 실험실(Playground)에서 지연 시간 및 리랭킹 점수 시각화를 담당함.
+*   **@BackendDev**: [API 및 서버 로직 구현](.gemini/skills/backend-dev/SKILL.md) - Django 기반 검색 엔진 코어 로직, `django-paradedb` 하이브리드 검색 및 **NumPy 가속 MaxSim 리랭킹** 파이프라인을 구현함.
+*   **@DataArchitect**: [데이터 및 모델링](.gemini/skills/data-architect/SKILL.md) - 데이터베이스 스키마 설계, **압축된 멀티벡터(128차원/int8)** 저장 및 데이터 무결성을 관리함.
+*   **@DevOps**: [인프라 및 배포](.gemini/skills/devops/SKILL.md) - Docker 기반 인프라 구성, ONNX Runtime 최적화 및 MCP 서버의 안정적인 배포를 책임짐.
 *   **@SecurityAuditor**: [보안 감사](.gemini/skills/security-auditor/SKILL.md) - 사용자 입력 보안(Sanitization), API 권한 관리 및 시스템 취약점을 점검함.
-*   **@QAEngineer**: [테스트 및 품질 보증](.gemini/skills/qa-engineer/SKILL.md) - 테스트 코드 작성 및 검색 품질 평가 프레임워크를 통한 성능 지표(MRR 등)를 리포팅함.
+*   **@QAEngineer**: [테스트 및 품질 보증](.gemini/skills/qa-engineer/SKILL.md) - 테스트 코드 작성 및 검색 응답 규격(SYS-002) 준수 여부, 성능 지표를 리포팅함.
 *   **@CodeReviewer**: [코드 리뷰](.gemini/skills/code-reviewer/SKILL.md) - 코드 품질 유지, 헌법 준수 여부 확인 및 팀 내 기술 표준 상향 평준화를 주도함.
-*   **@TechWriter**: [문서화](.gemini/skills/tech-writer/SKILL.md) - 프로젝트 기술 문서, API 규격서 및 사용자 가이드를 최신 상태로 유지함.
+*   **@TechWriter**: [문서화](.gemini/skills/tech-writer/SKILL.md) - 프로젝트 기술 문서, 아키텍처 진화 이력 및 사용자 가이드를 최신 상태로 유지함.

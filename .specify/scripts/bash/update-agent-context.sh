@@ -174,7 +174,9 @@ extract_plan_field() {
         sed "s|^\*\*${field_pattern}\*\*: ||" | \
         sed 's/^[ \t]*//;s/[ \t]*$//' | \
         grep -v "NEEDS CLARIFICATION" | \
-        grep -v "^N/A$" || echo ""
+        grep -v "^N/A$" | \
+        grep -v "확인 필요" | \
+        grep -v "해당 없음" || echo ""
 }
 
 parse_plan_data() {
@@ -192,10 +194,10 @@ parse_plan_data() {
 
     log_info "Parsing plan data from $plan_file"
 
-    NEW_LANG=$(extract_plan_field "Language/Version" "$plan_file")
-    NEW_FRAMEWORK=$(extract_plan_field "Primary Dependencies" "$plan_file")
-    NEW_DB=$(extract_plan_field "Storage" "$plan_file")
-    NEW_PROJECT_TYPE=$(extract_plan_field "Project Type" "$plan_file")
+    NEW_LANG=$(extract_plan_field "언어/버전" "$plan_file")
+    NEW_FRAMEWORK=$(extract_plan_field "주요 의존성" "$plan_file")
+    NEW_DB=$(extract_plan_field "저장소" "$plan_file")
+    NEW_PROJECT_TYPE=$(extract_plan_field "프로젝트 유형" "$plan_file")
 
     # Log what we found
     if [[ -n "$NEW_LANG" ]]; then
@@ -342,13 +344,13 @@ create_new_agent_file() {
     fi
 
     local substitutions=(
-        "s|\[PROJECT NAME\]|$project_name|"
-        "s|\[DATE\]|$current_date|"
-        "s|\[EXTRACTED FROM ALL PLAN.MD FILES\]|$tech_stack|"
-        "s|\[ACTUAL STRUCTURE FROM PLANS\]|$project_structure|g"
-        "s|\[ONLY COMMANDS FOR ACTIVE TECHNOLOGIES\]|$commands|"
-        "s|\[LANGUAGE-SPECIFIC, ONLY FOR LANGUAGES IN USE\]|$language_conventions|"
-        "s|\[LAST 3 FEATURES AND WHAT THEY ADDED\]|$recent_change|"
+        "s|\[프로젝트 이름\]|$project_name|"
+        "s|\[날짜\]|$current_date|"
+        "s|\[모든 PLAN.MD 파일에서 추출됨\]|$tech_stack|"
+        "s|\[계획서에서 추출된 실제 구조\]|$project_structure|g"
+        "s|\[활성 기술 스택을 위한 명령어만 포함\]|$commands|"
+        "s|\[언어별 가이드라인, 사용 중인 언어만 포함\]|$language_conventions|"
+        "s|\[마지막 3개 기능 및 추가된 내용\]|$recent_change|"
     )
 
     for substitution in "${substitutions[@]}"; do

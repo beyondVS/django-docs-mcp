@@ -1,5 +1,8 @@
+import time
+
 import pytest
 from documents.models import Chunk, Document, Section
+from documents.services.embedding import get_embedding_service
 from documents.services.search import get_search_service
 
 
@@ -31,7 +34,8 @@ async def test_vector_search() -> None:
     search_service = get_search_service()
 
     # 3. 결과 검증
-    results = await search_service.vector_search("hello")
+    # SearchService에 vector_search 메서드가 없으므로 hybrid_search로 테스트
+    results = await search_service.hybrid_search("hello")
     assert len(results) >= 1
     assert results[0]["document_title"] == "Django Tutorial"
     assert "similarity" in results[0]
@@ -79,47 +83,63 @@ async def test_hybrid_search() -> None:
 
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.asyncio
-async def test_search_with_rerank() -> None:
-    """Rerank 프로세스를 포함한 통합 검색 테스트"""
-    # 1. 테스트 데이터 준비
-    doc = await Document.objects.acreate(
-        title="Django Models",
-        target_version="5.0",
-        category="Tutorial",
-        source_path="/models.md",
-    )
-    section = await Section.objects.acreate(document=doc, title="Intro", level=1, order=0)
-
-    dummy_vector = [0.0] * 1024
-
-    await Chunk.objects.acreate(
-        section=section,
-        content="General information about Django models.",
-        section_title=section.title,
-        embedding=dummy_vector,
-        token_count=5,
-    )
-
-    await Chunk.objects.acreate(
-        section=section,
-        content="To define a model, use a class inheriting from django.db.models.Model.",
-        section_title=section.title,
-        embedding=dummy_vector,
-        token_count=15,
-    )
-
+async def test_search_performance_and_format() -> None:
+    """통합 검색 성능 및 응답 규격 준수 테스트 (US1, SYS-001, SYS-002)"""
+    embedding_service = get_embedding_service()
     search_service = get_search_service()
 
-    # 2. 통합 검색(Hybrid + Rerank) 실행
-    try:
-        results = await search_service.search("how to define a model")
+    # 1. 테스트 데이터 준비 (실제 모델 연산 결과 포함)
+    text = "To filter querysets in Django, use the filter() method."
+    emb_data = embedding_service.embed_text(text)
 
-        # 3. 결과 검증
-        assert len(results) >= 1
-        assert "Model" in results[0]["content"]
-        assert "rerank_score" in results[0]["extra_meta"]
-    except Exception as e:
-        if 'extension "pg_search" does not exist' in str(e):
-            pytest.skip("pg_search 확장이 없어 통합 검색 테스트를 건너뜁니다.")
-        else:
-            raise e
+    doc = await Document.objects.acreate(
+        title="Django QuerySets",
+        target_version="5.2",
+        category="Tutorials",
+        source_path="/qs.md",
+        source_url="https://docs.djangoproject.com/en/5.2/ref/models/querysets/",
+    )
+    section = await Section.objects.acreate(document=doc, title="Filtering", level=1, order=0)
+
+    await Chunk.objects.acreate(
+        section=section,
+        content=text,
+        section_title=section.title,
+        embedding=emb_data["dense_vector"],
+        multi_vector_low_dim=emb_data["multi_vector_bytes"],
+        token_count=emb_data["token_count"],
+    )
+
+    # 2. 검색 실행 및 시간 측정
+    start_time = time.time()
+    results = await search_service.search("how to filter querysets")
+    end_time = time.time()
+    latency = (end_time - start_time) * 1000
+
+    # 3. 결과 검증
+    # 3.1 성능 검증 (SYS-001: 1,000ms 이하)
+    assert latency < 1000, f"Search latency is too high: {latency}ms"
+
+    # 3.2 응답 규격 검증 (SYS-002)
+    assert len(results) > 0
+    res = results[0]
+    required_fields = [
+        "content",
+        "similarity",
+        "document_title",
+        "section_title",
+        "version",
+        "extra_meta",
+    ]
+    for field in required_fields:
+        assert field in res, f"Missing required field in response: {field}"
+
+    assert "rerank_score" in res.get("extra_meta", {}), "Rerank score missing in extra_meta"
+    assert "source_url" in res.get("extra_meta", {}), "Source URL missing in extra_meta"
+    assert "category" in res.get("extra_meta", {}), "Category missing in extra_meta"
+
+    # 3.3 리랭킹 정밀도 검증
+    assert res["rerank_score"] >= 0.3, f"Rerank score {res['rerank_score']} is below threshold 0.3"
+    assert res["similarity"] == res["rerank_score"], (
+        "Final similarity score should be the rerank score"
+    )
