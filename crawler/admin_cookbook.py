@@ -10,13 +10,13 @@ from utils.storage import get_file_path, save_file
 
 logger = get_logger(__name__)
 
-BASE_URL = "https://books.agiliq.com/projects/django-orm-cookbook/en/latest/"
-STORAGE_DIR = "../data_sources/django2-orm-cookbook"
+BASE_URL = "https://books.agiliq.com/projects/django-admin-cookbook/en/latest/"
+STORAGE_DIR = "../data_sources/django-admin-cookbook"
 
 
 async def crawl_book() -> None:
     """
-    Django ORM Cookbook 문서를 수집하는 메인 크롤링 함수입니다.
+    Django Admin Cookbook 문서를 수집하는 메인 크롤링 함수입니다.
     동시성을 제한하며 BFS(너비 우선 탐색) 방식으로 링크를 탐색합니다.
     """
     scraper = Scraper(concurrency_limit=5)
