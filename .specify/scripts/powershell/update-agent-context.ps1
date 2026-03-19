@@ -151,10 +151,10 @@ function Parse-PlanData {
     )
     if (-not (Test-Path $PlanFile)) { Write-Err "Plan file not found: $PlanFile"; return $false }
     Write-Info "Parsing plan data from $PlanFile"
-    $script:NEW_LANG        = Extract-PlanField -FieldPattern 'Language/Version' -PlanFile $PlanFile
-    $script:NEW_FRAMEWORK   = Extract-PlanField -FieldPattern 'Primary Dependencies' -PlanFile $PlanFile
-    $script:NEW_DB          = Extract-PlanField -FieldPattern 'Storage' -PlanFile $PlanFile
-    $script:NEW_PROJECT_TYPE = Extract-PlanField -FieldPattern 'Project Type' -PlanFile $PlanFile
+    $script:NEW_LANG        = Extract-PlanField -FieldPattern '언어/버전' -PlanFile $PlanFile
+    $script:NEW_FRAMEWORK   = Extract-PlanField -FieldPattern '주요 의존성' -PlanFile $PlanFile
+    $script:NEW_DB          = Extract-PlanField -FieldPattern '저장소' -PlanFile $PlanFile
+    $script:NEW_PROJECT_TYPE = Extract-PlanField -FieldPattern '프로젝트 유형' -PlanFile $PlanFile
 
     if ($NEW_LANG) { Write-Info "Found language: $NEW_LANG" } else { Write-WarningMsg 'No language information found in plan' }
     if ($NEW_FRAMEWORK) { Write-Info "Found framework: $NEW_FRAMEWORK" }

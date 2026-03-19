@@ -192,10 +192,10 @@ parse_plan_data() {
 
     log_info "Parsing plan data from $plan_file"
 
-    NEW_LANG=$(extract_plan_field "Language/Version" "$plan_file")
-    NEW_FRAMEWORK=$(extract_plan_field "Primary Dependencies" "$plan_file")
-    NEW_DB=$(extract_plan_field "Storage" "$plan_file")
-    NEW_PROJECT_TYPE=$(extract_plan_field "Project Type" "$plan_file")
+    NEW_LANG=$(extract_plan_field "언어/버전" "$plan_file")
+    NEW_FRAMEWORK=$(extract_plan_field "주요 의존성" "$plan_file")
+    NEW_DB=$(extract_plan_field "저장소" "$plan_file")
+    NEW_PROJECT_TYPE=$(extract_plan_field "프로젝트 유형" "$plan_file")
 
     # Log what we found
     if [[ -n "$NEW_LANG" ]]; then
