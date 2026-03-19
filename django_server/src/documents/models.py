@@ -2,6 +2,7 @@ import uuid
 from typing import TYPE_CHECKING
 
 from django.db import models
+from paradedb import BM25Index
 from pgvector.django import HnswIndex, VectorField
 
 if TYPE_CHECKING:
@@ -112,7 +113,16 @@ class Chunk(models.Model):
                 m=16,
                 ef_construction=64,
                 opclasses=["vector_cosine_ops"],
-            )
+            ),
+            BM25Index(
+                name="chunk_bm25_idx",
+                fields={
+                    "id": {},
+                    "content": {},
+                    "section_title": {},
+                },
+                key_field="id",
+            ),
         ]
 
     def __str__(self) -> str:

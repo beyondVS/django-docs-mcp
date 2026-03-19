@@ -88,6 +88,8 @@ class Command(BaseCommand):
                 self.stderr.write(self.style.ERROR(error_msg))
                 # T021: 에러 기록은 서비스 내부에서도 수행되나, CLI 에러 출력을 위해 유지
 
+                logger.error(error_msg, exc_info=True)
+
                 # 임베딩 모델 Timeout 등 치명적 오류 시 프로세스 중단
                 if "model" in str(e).lower() or "connection" in str(e).lower():
                     self.stdout.write(self.style.ERROR("치명적인 오류로 인해 작업을 중단합니다."))

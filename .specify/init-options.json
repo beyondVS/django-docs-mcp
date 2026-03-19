@@ -1,9 +1,9 @@
 {
   "ai": "gemini",
   "ai_commands_dir": null,
-  "ai_skills": false,
+  "ai_skills": true,
   "here": true,
   "preset": null,
   "script": "ps",
-  "speckit_version": "0.3.0"
+  "speckit_version": "0.3.1"
 }

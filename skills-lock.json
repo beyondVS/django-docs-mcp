@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "paradedb-skill": {
+      "source": "paradedb/agent-skills",
+      "sourceType": "github",
+      "computedHash": "a11ab56d43df32369b3e9daace0135a569b7032a2a4e526c038fbfd8b055593f"
+    }
+  }
+}

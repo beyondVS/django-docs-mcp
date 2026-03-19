@@ -9,7 +9,7 @@ Mirrors the behavior of scripts/bash/update-agent-context.sh:
  2. Plan Data Extraction
  3. Agent File Management (create from template or update existing)
  4. Content Generation (technology stack, recent changes, timestamp)
- 5. Multi-Agent Support (claude, gemini, copilot, cursor-agent, qwen, opencode, codex, windsurf, kilocode, auggie, roo, codebuddy, amp, shai, tabnine, kiro-cli, agy, bob, vibe, qodercli, kimi, generic)
+ 5. Multi-Agent Support (claude, gemini, copilot, cursor-agent, qwen, opencode, codex, windsurf, kilocode, auggie, roo, codebuddy, amp, shai, tabnine, kiro-cli, agy, bob, vibe, qodercli, kimi, trae, pi, iflow, generic)
 
 .PARAMETER AgentType
 Optional agent key to update a single agent. If omitted, updates all existing agent files (creating a default Claude file if none exist).
@@ -25,7 +25,7 @@ Relies on common helper functions in common.ps1
 #>
 param(
     [Parameter(Position=0)]
-    [ValidateSet('claude','gemini','copilot','cursor-agent','qwen','opencode','codex','windsurf','kilocode','auggie','roo','codebuddy','amp','shai','tabnine','kiro-cli','agy','bob','qodercli','vibe','kimi','generic')]
+    [ValidateSet('claude','gemini','copilot','cursor-agent','qwen','opencode','codex','windsurf','kilocode','auggie','roo','codebuddy','amp','shai','tabnine','kiro-cli','agy','bob','qodercli','vibe','kimi','trae','pi','iflow','generic')]
     [string]$AgentType
 )
 
@@ -64,6 +64,8 @@ $AGY_FILE      = Join-Path $REPO_ROOT '.agent/rules/specify-rules.md'
 $BOB_FILE      = Join-Path $REPO_ROOT 'AGENTS.md'
 $VIBE_FILE     = Join-Path $REPO_ROOT '.vibe/agents/specify-agents.md'
 $KIMI_FILE     = Join-Path $REPO_ROOT 'KIMI.md'
+$TRAE_FILE     = Join-Path $REPO_ROOT '.trae/rules/AGENTS.md'
+$IFLOW_FILE    = Join-Path $REPO_ROOT 'IFLOW.md'
 
 $TEMPLATE_FILE = Join-Path $REPO_ROOT '.specify/templates/agent-file-template.md'
 
@@ -226,8 +228,8 @@ function New-AgentFile {
     $escaped_branch = $CURRENT_BRANCH
 
     $content = Get-Content -LiteralPath $temp -Raw -Encoding utf8
-    $content = $content -replace '\[PROJECT NAME\]',$ProjectName
-    $content = $content -replace '\[DATE\]',$Date.ToString('yyyy-MM-dd')
+    $content = $content -replace '\[프로젝트 이름]',$ProjectName
+    $content = $content -replace '\[날짜\]',$Date.ToString('yyyy-MM-dd')
 
     # Build the technology stack string safely
     $techStackForTemplate = ""
@@ -239,13 +241,13 @@ function New-AgentFile {
         $techStackForTemplate = "- $escaped_framework ($escaped_branch)"
     }
 
-    $content = $content -replace '\[EXTRACTED FROM ALL PLAN.MD FILES\]',$techStackForTemplate
+    $content = $content -replace '\[모든 PLAN.MD 파일에서 추출됨\]',$techStackForTemplate
     # For project structure we manually embed (keep newlines)
     $escapedStructure = [Regex]::Escape($projectStructure)
-    $content = $content -replace '\[ACTUAL STRUCTURE FROM PLANS\]',$escapedStructure
+    $content = $content -replace '\[계획서에서 추출된 실제 구조\]',$escapedStructure
     # Replace escaped newlines placeholder after all replacements
-    $content = $content -replace '\[ONLY COMMANDS FOR ACTIVE TECHNOLOGIES\]',$commands
-    $content = $content -replace '\[LANGUAGE-SPECIFIC, ONLY FOR LANGUAGES IN USE\]',$languageConventions
+    $content = $content -replace '\[활성 기술 스택을 위한 명령어만 포함\]',$commands
+    $content = $content -replace '\[언어별 가이드라인, 사용 중인 언어만 포함\]',$languageConventions
 
     # Build the recent changes string safely
     $recentChangesForTemplate = ""
@@ -257,7 +259,7 @@ function New-AgentFile {
         $recentChangesForTemplate = "- ${escaped_branch}: Added ${escaped_framework}"
     }
 
-    $content = $content -replace '\[LAST 3 FEATURES AND WHAT THEY ADDED\]',$recentChangesForTemplate
+    $content = $content -replace '\[마지막 3개 기능 및 추가된 내용\]',$recentChangesForTemplate
     # Convert literal \n sequences introduced by Escape to real newlines
     $content = $content -replace '\\n',[Environment]::NewLine
 
@@ -307,7 +309,7 @@ function Update-ExistingAgentFile {
 
     for ($i=0; $i -lt $lines.Count; $i++) {
         $line = $lines[$i]
-        if ($line -eq '## Active Technologies') {
+        if ($line -match '^(## Active Technologies|## 활성 기술 스택)') {
             $output.Add($line)
             $inTech = $true
             continue
@@ -320,7 +322,7 @@ function Update-ExistingAgentFile {
             if (-not $techAdded -and $newTechEntries.Count -gt 0) { $newTechEntries | ForEach-Object { $output.Add($_) }; $techAdded = $true }
             $output.Add($line); continue
         }
-        if ($line -eq '## Recent Changes') {
+        if ($line -match '^(## Recent Changes|## 최근 변경 사항)') {
             $output.Add($line)
             if ($newChangeEntry) { $output.Add($newChangeEntry); $changeAdded = $true }
             $inChanges = $true
@@ -331,7 +333,7 @@ function Update-ExistingAgentFile {
             if ($existingChanges -lt 2) { $output.Add($line); $existingChanges++ }
             continue
         }
-        if ($line -match '(\*\*)?Last updated(\*\*)?: .*\d{4}-\d{2}-\d{2}') {
+        if ($line -match '(\*\*)?(Last updated|최종 업데이트)(\*\*)?: .*\d{4}-\d{2}-\d{2}') {
             $output.Add(($line -replace '\d{4}-\d{2}-\d{2}',$Date.ToString('yyyy-MM-dd')))
             continue
         }
@@ -408,8 +410,11 @@ function Update-SpecificAgent {
         'bob'      { Update-AgentFile -TargetFile $BOB_FILE      -AgentName 'IBM Bob' }
         'vibe'     { Update-AgentFile -TargetFile $VIBE_FILE     -AgentName 'Mistral Vibe' }
         'kimi'     { Update-AgentFile -TargetFile $KIMI_FILE     -AgentName 'Kimi Code' }
+        'trae'     { Update-AgentFile -TargetFile $TRAE_FILE     -AgentName 'Trae' }
+        'pi'       { Update-AgentFile -TargetFile $AGENTS_FILE   -AgentName 'Pi Coding Agent' }
+        'iflow'    { Update-AgentFile -TargetFile $IFLOW_FILE    -AgentName 'iFlow CLI' }
         'generic'  { Write-Info 'Generic agent: no predefined context file. Use the agent-specific update script for your agent.' }
-        default { Write-Err "Unknown agent type '$Type'"; Write-Err 'Expected: claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|generic'; return $false }
+        default { Write-Err "Unknown agent type '$Type'"; Write-Err 'Expected: claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|trae|pi|iflow|generic'; return $false }
     }
 }
 
@@ -435,6 +440,8 @@ function Update-AllExistingAgents {
     if (Test-Path $BOB_FILE)      { if (-not (Update-AgentFile -TargetFile $BOB_FILE      -AgentName 'IBM Bob')) { $ok = $false }; $found = $true }
     if (Test-Path $VIBE_FILE)     { if (-not (Update-AgentFile -TargetFile $VIBE_FILE     -AgentName 'Mistral Vibe')) { $ok = $false }; $found = $true }
     if (Test-Path $KIMI_FILE)     { if (-not (Update-AgentFile -TargetFile $KIMI_FILE     -AgentName 'Kimi Code')) { $ok = $false }; $found = $true }
+    if (Test-Path $TRAE_FILE)     { if (-not (Update-AgentFile -TargetFile $TRAE_FILE     -AgentName 'Trae')) { $ok = $false }; $found = $true }
+    if (Test-Path $IFLOW_FILE)    { if (-not (Update-AgentFile -TargetFile $IFLOW_FILE    -AgentName 'iFlow CLI')) { $ok = $false }; $found = $true }
     if (-not $found) {
         Write-Info 'No existing agent files found, creating default Claude file...'
         if (-not (Update-AgentFile -TargetFile $CLAUDE_FILE -AgentName 'Claude Code')) { $ok = $false }
@@ -449,7 +456,7 @@ function Print-Summary {
     if ($NEW_FRAMEWORK) { Write-Host "  - Added framework: $NEW_FRAMEWORK" }
     if ($NEW_DB -and $NEW_DB -ne 'N/A') { Write-Host "  - Added database: $NEW_DB" }
     Write-Host ''
-    Write-Info 'Usage: ./update-agent-context.ps1 [-AgentType claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|generic]'
+    Write-Info 'Usage: ./update-agent-context.ps1 [-AgentType claude|gemini|copilot|cursor-agent|qwen|opencode|codex|windsurf|kilocode|auggie|roo|codebuddy|amp|shai|tabnine|kiro-cli|agy|bob|vibe|qodercli|kimi|trae|pi|iflow|generic]'
 }
 
 function Main {
