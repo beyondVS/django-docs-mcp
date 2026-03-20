@@ -8,30 +8,27 @@ import numpy as np
 import torch
 from django.conf import settings
 from optimum.onnxruntime import ORTModelForFeatureExtraction
-from transformers import AutoTokenizer
+from transformers import AutoModel, AutoTokenizer
 
 logger = logging.getLogger(__name__)
 
 
-class EmbeddingService:
+class ONNXEmbeddingService:
     """
     텍스트 데이터를 벡터 임베딩으로 변환하는 싱글톤 서비스 클래스.
 
     BGE-M3 ONNX INT8 모델을 사용하여 Dense 벡터와 Late Interaction용 멀티 벡터를 생성합니다.
     """
 
-    _instance: EmbeddingService | None = None
+    _instance: ONNXEmbeddingService | None = None
     _model: ORTModelForFeatureExtraction | None = None
     _tokenizer: Any = None
 
-    def __new__(cls) -> EmbeddingService:
-        """
-        EmbeddingService의 싱글톤 인스턴스를 생성하거나 반환합니다.
-        """
+    def __new__(cls) -> ONNXEmbeddingService:
         if cls._instance is None:
             instance = super().__new__(cls)
             cls._instance = instance
-            model_name = getattr(settings, "EMBEDDING_MODEL_NAME", "gpahal/bge-m3-onnx-int8")
+            model_name = "gpahal/bge-m3-onnx-int8"
 
             try:
                 # 1. 토크나이저 로드
@@ -42,9 +39,9 @@ class EmbeddingService:
                 cls._model = ORTModelForFeatureExtraction.from_pretrained(
                     model_name, file_name="model_quantized.onnx", provider="CPUExecutionProvider"
                 )
-                logger.info(f"Successfully loaded embedding model: {model_name}")
+                logger.info(f"Successfully loaded ONNX embedding model: {model_name}")
             except Exception as e:
-                logger.error(f"Failed to load embedding model {model_name}: {str(e)}")
+                logger.error(f"Failed to load ONNX embedding model {model_name}: {str(e)}")
                 raise
         return cls._instance
 
@@ -127,6 +124,98 @@ class EmbeddingService:
         return results
 
 
-def get_embedding_service() -> EmbeddingService:
-    """EmbeddingService 인스턴스를 반환합니다."""
-    return EmbeddingService()
+class StandardEmbeddingService:
+    """
+    표준 HuggingFace 모델(BAAI/bge-m3 등)을 사용하는 싱글톤 서비스 클래스.
+
+    int8 양자화를 수행하지 않고 float32 그대로 저장합니다. 성능 비교 목적으로 사용됩니다.
+    """
+
+    _instance: StandardEmbeddingService | None = None
+    _model: Any = None
+    _tokenizer: Any = None
+
+    def __new__(cls) -> StandardEmbeddingService:
+        if cls._instance is None:
+            instance = super().__new__(cls)
+            cls._instance = instance
+            model_name = "BAAI/bge-m3"
+
+            try:
+                cls._tokenizer = AutoTokenizer.from_pretrained(model_name)
+                cls._model = AutoModel.from_pretrained(model_name)
+                cls._model.eval()
+                logger.info(f"Successfully loaded standard embedding model: {model_name}")
+            except Exception as e:
+                logger.error(f"Failed to load standard embedding model {model_name}: {str(e)}")
+                raise
+        return cls._instance
+
+    def embed_text(self, text: str) -> dict[str, Any]:
+        """
+        단일 텍스트를 Dense 벡터와 압축된 멀티 벡터로 변환합니다.
+        """
+        results = self.embed_batch([text])
+        return results[0]
+
+    def embed_batch(self, texts: list[str]) -> list[dict[str, Any]]:
+        """
+        여러 텍스트를 배치 처리하여 Dense 벡터와 압축된 멀티 벡터를 생성합니다.
+        """
+        tokenizer = self._tokenizer
+        model = self._model
+
+        if model is None or tokenizer is None:
+            raise RuntimeError("모델 또는 토크나이저가 로드되지 않았습니다.")
+
+        # 1. 토큰화
+        encoded_input = tokenizer(
+            texts, padding=True, truncation=True, max_length=8192, return_tensors="pt"
+        )
+
+        with torch.no_grad():
+            outputs = model(**encoded_input)
+
+        # BGE-M3 모델은 CLS 토큰 (last_hidden_state[:, 0]) 을 dense vector로 사용
+        dense_vecs = outputs.last_hidden_state[:, 0]
+        dense_embeddings = torch.nn.functional.normalize(dense_vecs, p=2, dim=1)
+        dense_list = dense_embeddings.tolist()
+
+        last_hidden_state = outputs.last_hidden_state
+        results = []
+        dim = getattr(settings, "LATE_INTERACTION_DIM", 128)
+
+        for i in range(len(texts)):
+            actual_seq_len = last_hidden_state.shape[1]
+            mask = encoded_input["attention_mask"][i].numpy()
+            valid_token_count = int(np.sum(mask))
+            n_tokens = min(valid_token_count, actual_seq_len)
+
+            multi_vec = last_hidden_state[i, :n_tokens, :dim]
+            multi_vec = torch.nn.functional.normalize(multi_vec, p=2, dim=1)
+
+            # int8 캐스팅 하지 않고 float32 그대로 저장
+            multi_vec_np = multi_vec.numpy().astype(np.float32)
+
+            # 바이너리 패킹: [TokenCount(2B)][VectorData]
+            header = struct.pack("<H", n_tokens)
+            data = multi_vec_np.tobytes()
+
+            results.append(
+                {
+                    "dense_vector": [float(x) for x in dense_list[i]],
+                    "multi_vector_bytes": header + data,
+                    "token_count": n_tokens,
+                }
+            )
+
+        return results
+
+
+def get_embedding_service() -> ONNXEmbeddingService | StandardEmbeddingService:
+    """설정에 따라 적절한 EmbeddingService 인스턴스를 반환합니다."""
+    use_onnx = getattr(settings, "USE_ONNX_EMBEDDING", True)
+    if use_onnx:
+        return ONNXEmbeddingService()
+    else:
+        return StandardEmbeddingService()
