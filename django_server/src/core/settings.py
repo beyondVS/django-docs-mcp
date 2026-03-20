@@ -180,10 +180,11 @@ LOGGING = {
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 # AI Model Settings
-# BGE-M3 ONNX INT8 모델 (Dense + Multi-vector 통합 활용)
-EMBEDDING_MODEL_NAME = os.getenv("EMBEDDING_MODEL_NAME", "gpahal/bge-m3-onnx-int8")
+USE_ONNX_EMBEDDING = os.getenv("USE_ONNX_EMBEDDING", "True") == "True"
+
 # Late Interaction (ColBERT) 관련 설정
 LATE_INTERACTION_DIM = 128
 LATE_INTERACTION_THRESHOLD = 0.3
+
 # 리랭킹 후보군 수
 RERANK_TOP_N = 50

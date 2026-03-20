@@ -32,8 +32,15 @@ class RerankingService:
             return 0.0
 
         # 2. MaxSim 연산 (NumPy 가속)
-        q_vecs_f = q_vecs.astype(np.float32) / 127.0
-        d_vecs_f = d_vecs.astype(np.float32) / 127.0
+        use_onnx = getattr(settings, "USE_ONNX_EMBEDDING", True)
+        if use_onnx:
+            # int8 양자화 해제
+            q_vecs_f = q_vecs.astype(np.float32) / 127.0
+            d_vecs_f = d_vecs.astype(np.float32) / 127.0
+        else:
+            # float32 원본 사용
+            q_vecs_f = q_vecs
+            d_vecs_f = d_vecs
 
         scores = q_vecs_f @ d_vecs_f.T
         max_scores_per_query_token = np.max(scores, axis=1)
@@ -99,15 +106,19 @@ class RerankingService:
         token_count = struct.unpack("<H", packed_data[:2])[0]
 
         # 2. 벡터 데이터 추출
-        expected_size = token_count * self.dim
+        use_onnx = getattr(settings, "USE_ONNX_EMBEDDING", True)
+        dtype = np.int8 if use_onnx else np.float32
+        itemsize = 1 if use_onnx else 4
+
+        expected_size = token_count * self.dim * itemsize
         actual_size = len(packed_data) - 2
 
         if actual_size < expected_size:
             # 데이터 손상 시 가능한 만큼만 처리하거나 에러 발생
-            token_count = actual_size // self.dim
-            expected_size = token_count * self.dim
+            token_count = actual_size // (self.dim * itemsize)
+            expected_size = token_count * self.dim * itemsize
 
-        vector_data = np.frombuffer(packed_data[2 : 2 + expected_size], dtype=np.int8).reshape(
+        vector_data = np.frombuffer(packed_data[2 : 2 + expected_size], dtype=dtype).reshape(
             token_count, self.dim
         )
 
