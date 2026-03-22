@@ -54,6 +54,8 @@ class Command(BaseCommand):
             raise CommandError("경로(path)를 지정하거나 --reindex 옵션을 사용해야 합니다.")
 
         items_to_process = []
+        # T011: 목차/인덱스 파일 제외 키워드 정의 (최적화)
+        EXCLUDE_KEYWORDS = ["index", "latest", "toc", "genindex"]
 
         # 1. 경로가 제공된 경우 파일 수집
         if path_str:
@@ -64,9 +66,15 @@ class Command(BaseCommand):
             files = []
             if path.is_file():
                 if path.suffix == ".md":
-                    files.append(path)
+                    # 개별 파일 지정 시에도 필터링 규칙 적용
+                    if not any(kw in path.name.lower() for kw in EXCLUDE_KEYWORDS):
+                        files.append(path)
             else:
-                files.extend(list(path.glob("**/*.md")))
+                # glob 결과에서 즉시 필터링하여 불필요한 처리 오버헤드 방지
+                files.extend([
+                    f for f in path.glob("**/*.md")
+                    if not any(kw in f.name.lower() for kw in EXCLUDE_KEYWORDS)
+                ])
 
             for f in files:
                 items_to_process.append(
@@ -83,11 +91,10 @@ class Command(BaseCommand):
             added_count = 0
             for doc in existing_docs:
                 p = Path(doc.source_path)
-                # 중복 방지 (path 및 version 조합 확인) 및 존재 여부 확인 통합
-                if p.exists() and not any(
-                    item["path"] == p and item["version"] == doc.target_version
-                    for item in items_to_process
-                ):
+                # 파일이 존재하고, 필터링 대상이 아니며, 중복되지 않은 경우 추가
+                if p.exists() and \
+                   not any(kw in p.name.lower() for kw in EXCLUDE_KEYWORDS) and \
+                   not any(item["path"] == p and item["version"] == doc.target_version for item in items_to_process):
                     items_to_process.append(
                         {"path": p, "version": doc.target_version, "category": doc.category}
                     )
