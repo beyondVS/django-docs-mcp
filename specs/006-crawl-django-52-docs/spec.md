@@ -58,7 +58,7 @@
 - **FR-003**: 시스템은 가져온 `.txt` (RST 형식) 문서를 `docutils` 기반 파서를 활용하여 Markdown 형식으로 변환해야 함
 - **FR-004**: RST 파싱 및 변환 로직은 하위 호환성을 위해 기존 모듈을 수정하지 않고 `crawler/utils/rst_converter.py` 등의 새로운 유틸리티 모듈에 독립적으로 구현해야 함
 - **FR-005**: 시스템은 `./crawler` 폴더 내에 Django 5.2 크롤링 전용 스크립트를 독립적으로 생성해야 함
-- **FR-006**: 시스템은 문서 변환 과정에서 생성된 Markdown에 실제 문서의 웹페이지 경로(`https://docs.djangoproject.com/en/5.2/...`) 정보를 식별하여 메타데이터로 포함시켜야 함
+- **FR-006**: 시스템은 문서 변환 과정에서 생성된 Markdown 상단 메타데이터(Front Matter)에 문서의 원본 출처인 웹페이지 경로(`source_url: https://docs.djangoproject.com/en/5.2/...`)와 대상 버전(`target_version: 5.2`)을 명시적으로 포함시켜야 함
 - **FR-007**: 변환된 Markdown 파일은 `data_sources/django-5.2-docs/` 디렉터리 내에 원본 RST 파일의 폴더 계층 구조를 유지하여 저장해야 함
 - **FR-008**: 기존 크롤러 스크립트(`orm_cookbook.py` 등)는 유틸리티 함수 변경 후에도 정상적으로 작동해야 함
 
