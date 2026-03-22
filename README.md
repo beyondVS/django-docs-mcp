@@ -82,6 +82,8 @@ docker-compose up -d db
 ### 2. 크롤러 실행 (문서 다운로드)
 ```bash
 cd crawler
+# Django 5.2 공식 문서 (Git Sparse Checkout 및 RST 변환)
+uv run python django52_crawler.py
 # Django ORM Cookbook
 uv run python orm_cookbook.py
 # Django Admin Cookbook
@@ -102,6 +104,8 @@ uv run python src/manage.py migrate
 uv run python src/manage.py ingest_docs --reindex
 
 # 특정 경로의 마크다운 파일을 신규 적재합니다.
+# Django 5.2 공식 문서
+uv run python src/manage.py ingest_docs ../data_sources/django-5.2-docs/ --doc-version 5.2 --category Documentation
 # ORM Cookbook
 uv run python src/manage.py ingest_docs ../data_sources/django2-orm-cookbook/ --doc-version 2.2 --category Cookbook
 # Admin Cookbook
@@ -127,8 +131,8 @@ uv run python src/manage.py runserver
 - [ ] **Phase 3: MCP Server (Serving)**
     - [ ] FastMCP 기반 서버 골격 구축
     - [ ] 하이브리드 검색 도구(Tool) 및 문서 리소스(Resource) 구현
-- [ ] **Phase 4: 문서 확장 및 고도화**
-    - [ ] Django 공식 문서 전체 크롤링 및 적재
+- [x] **Phase 4: 문서 확장 및 고도화**
+    - [x] Django 공식 문서 전체 크롤링 및 적재 (5.2 LTS 완료)
     - [ ] 다국어 질의 성능 최적화 (bge-m3 튜닝)
 
 
