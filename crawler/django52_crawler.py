@@ -83,6 +83,7 @@ def clone_docs():
 
 def discover_rst_files() -> list[Path]:
     """클론된 임시 디렉터리 내의 모든 RST(.txt) 파일을 재귀적으로 탐색합니다.
+    'docs/releases/' 디렉터리는 릴리즈 히스토리 노이즈 방지를 위해 제외합니다.
 
     Returns:
         list[Path]: 탐색된 .txt 파일의 Path 객체 리스트.
@@ -92,8 +93,13 @@ def discover_rst_files() -> list[Path]:
         logger.error(f"문서 디렉터리를 찾을 수 없습니다: {docs_dir}")
         return []
 
-    rst_files = list(docs_dir.rglob("*.txt"))
-    logger.info(f"총 {len(rst_files)}개의 RST(.txt) 파일을 발견했습니다.")
+    # releases/ 디렉터리를 제외하고 탐색
+    rst_files = [
+        p
+        for p in docs_dir.rglob("*.txt")
+        if "releases" + os.sep not in str(p.relative_to(docs_dir))
+    ]
+    logger.info(f"총 {len(rst_files)}개의 RST(.txt) 파일을 발견했습니다. (releases/ 제외)")
     return rst_files
 
 
