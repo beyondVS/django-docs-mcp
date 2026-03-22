@@ -48,3 +48,28 @@ def test_add_metadata_windows_path():
     result = add_metadata(markdown_input, file_path)
 
     assert "source_url: https://docs.djangoproject.com/en/5.2/topics/settings/" in result
+
+
+def test_rst_to_markdown_sphinx_syntax():
+    """Sphinx 전용 롤과 디렉티브가 파싱 오류 없이 정상적으로 변환되는지 확인합니다."""
+    rst_input = """
+제목
+====
+
+이것은 :doc:`intro/install` 문서와 :ref:`setting-DEBUG` 설정입니다.
+
+.. note::
+
+    이것은 노트 디렉티브입니다.
+    여러 줄의 내용이 포함됩니다.
+    """
+
+    markdown_output = rst_to_markdown(rst_input)
+
+    # 파싱 오류 메시지(Unknown interpreted text role 등)가 포함되지 않아야 함
+    assert "Unknown" not in markdown_output
+    assert "ERROR" not in markdown_output
+    # 롤 내의 텍스트와 디렉티브 내의 내용이 보존되어야 함
+    assert "intro/install" in markdown_output
+    assert "setting-DEBUG" in markdown_output
+    assert "이것은 노트 디렉티브입니다" in markdown_output
