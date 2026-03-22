@@ -105,17 +105,20 @@ def rst_to_markdown(rst_content: str) -> str:
     """
     base_url = "https://docs.djangoproject.com/en/5.2"
     
-    # 0. 전처리: docutils 파싱 전 특수 구문 보호
-    # 틸드(~)와 이스케이프(\_)를 미리 제거하여 파싱 방해 요소 제거
+    # 0. 전처리: 파싱 방해 요소 제거
     processed_rst = rst_content.replace(r"\_", "_").replace(r"\*", "*")
     
     # 1. docutils를 통해 RST를 HTML 구조로 변환
     settings_overrides = {
         "report_level": 5,
         "halt_level": 5,
+        "syntax_highlight": "short",
     }
     parts = publish_parts(source=processed_rst, writer_name="html", settings_overrides=settings_overrides)
     html_content = parts.get("html_body", "")
+
+    # 1-1. HTML 보정: <tt> 태그를 <code> 태그로 변경하여 markdownify가 인식하게 함
+    html_content = html_content.replace("<tt", "<code").replace("</tt>", "</code>")
 
     # 2. HTML을 마크다운으로 변환
     markdown_content = md(
@@ -131,10 +134,12 @@ def rst_to_markdown(rst_content: str) -> str:
 
     # 3. 후처리: 마크다운 텍스트 정제
     
+    # 3-0. markdownify가 인코딩한 HTML 엔티티 복원 (정규표현식 매칭을 위함)
+    markdown_content = markdown_content.replace("&lt;", "<").replace("&gt;", ">").replace("&amp;", "&")
+
     # 3-1. :doc: 링크 변환
-    # 패턴: :doc:`Title <path>` 또는 :doc:`path`
     def _final_convert_doc(match):
-        role_content = match.group(1)
+        role_content = match.group(1).strip("` ")
         if " <" in role_content and role_content.endswith(">"):
             text, path = role_content.split(" <")
             path = path[:-1].lstrip("/")
@@ -142,19 +147,16 @@ def rst_to_markdown(rst_content: str) -> str:
             text = role_content
             path = role_content.lstrip("/")
         
-        # 경로 정제
         path = path.replace(".txt", "").replace(".rst", "").replace("~", "")
         if path and not path.endswith("/"):
             path += "/"
         return f"[{text}]({base_url}/{path})"
 
-    markdown_content = re.sub(r":doc:(`[^`]+`)", lambda m: _final_convert_doc(m), markdown_content)
-    # 백틱이 없는 경우 대비
-    markdown_content = re.sub(r":doc:([^ \n`]+)", lambda m: _final_convert_doc(m), markdown_content)
+    markdown_content = re.sub(r":doc:(`[^`]+`|[^ \n`<>]+(?: <[^>]+>))", _final_convert_doc, markdown_content)
 
     # 3-2. :setting: 링크 변환
     def _final_convert_setting(match):
-        setting_name = match.group(1).replace("`", "").replace("~", "")
+        setting_name = match.group(1).replace("`", "").replace("~", "").replace("\\_", "_")
         anchor = setting_name.lower().replace("_", "-")
         return f"[{setting_name}]({base_url}/ref/settings/#{anchor})"
 
@@ -163,13 +165,13 @@ def rst_to_markdown(rst_content: str) -> str:
     # 3-3. 기타 찌꺼기 청소
     # 모든 틸드(~) 제거
     markdown_content = markdown_content.replace("~", "")
+    # 이스케이프 제거 (가장 마지막에 수행하여 markdownify가 만든 모든 \_ 제거)
+    markdown_content = markdown_content.replace(r"\_", "_").replace(r"\*", "*")
+    
     # 남은 :role:`content` 또는 :role:content 패턴을 내용만 남김
     markdown_content = re.sub(r":[a-z0-9_-]+:(`[^`]+`|[^ \n`]+)", r"\1", markdown_content)
     # 백틱(`) 기호 앞의 불필요한 콜론 제거
     markdown_content = re.sub(r":(`[^`]+`)", r"\1", markdown_content)
-    # 백틱 제거 (선택 사항: 링크가 아닌 일반 강조는 백틱을 유지하거나 제거)
-    # 여기서는 가독성을 위해 Sphinx 롤이었던 것들은 백틱을 제거하고 일반 텍스트로 만듭니다.
-    # 단, 사용자가 명시적으로 넣은 코드는 유지해야 하므로 주의가 필요함.
 
     # 4. 과도한 줄바꿈 등 최종 정제
     markdown_content = re.sub(r"\n{3,}", "\n\n", markdown_content)
