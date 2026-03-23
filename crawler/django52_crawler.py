@@ -1,184 +1,224 @@
-"""
-Django 5.2 문서 크롤러 스크립트
-
-GitHub 저장소에서 문서를 가져와서 마크다운으로 변환 후 로컬 파일 시스템에 저장합니다.
-"""
-
-import os
+import argparse
+import asyncio
 import shutil
-import subprocess
+from dataclasses import dataclass, field
 from pathlib import Path
+from urllib.parse import urljoin
 
+from bs4 import BeautifulSoup
+from tqdm import tqdm
+from utils.converter import extract_content, to_markdown
 from utils.logger import get_logger
-from utils.rst_converter import add_metadata, rst_to_markdown
+from utils.scraper import Scraper
+from utils.storage import get_file_path, save_file
 
 logger = get_logger(__name__)
 
-REPO_URL = "https://github.com/django/django.git"
-BRANCH = "stable/5.2.x"
-# 스크립트 파일 위치 기준 절대 경로 계산
-BASE_DIR = Path(__file__).resolve().parent
-TEMP_DIR = BASE_DIR / ".temp/django_src"
-OUTPUT_DIR = BASE_DIR.parent / "data_sources/django-5.2-docs"
+
+@dataclass
+class CrawlerConfig:
+    """크롤러 설정 클래스"""
+
+    seed_url: str = "https://docs.djangoproject.com/en/5.2/"
+    base_prefix: str = "https://docs.djangoproject.com/en/5.2/"
+    exclusion_prefixes: list[str] = field(
+        default_factory=lambda: ["https://docs.djangoproject.com/en/5.2/releases/"]
+    )
+    concurrency_limit: int = 5
+    temp_dir: str = ".temp/django-5.2-docs"
+    output_dir: str = "../data_sources/django-5.2-docs"
+    target_version: str = "5.2"
 
 
-def clone_docs():
-    """GitHub에서 Django 문서 저장소의 docs 폴더만 sparse-checkout으로 클론합니다.
+@dataclass
+class CrawlSession:
+    """크롤링 세션 상태 관리 클래스"""
 
-    기존에 임시 디렉터리가 존재할 경우 삭제 후 새로 클론을 시도합니다.
-    sparse-checkout을 통해 전체 저장소 대신 docs 폴더의 내용만 효율적으로 가져옵니다.
+    visited_urls: set[str] = field(default_factory=set)
+    queue: asyncio.Queue[str] = field(default_factory=asyncio.Queue)
+    success_count: int = 0
+    failure_count: int = 0
 
-    Raises:
-        subprocess.CalledProcessError: Git 명령어 실행 중 오류가 발생한 경우.
-    """
-    if TEMP_DIR.exists():
-        logger.info(f"기존 임시 디렉터리 삭제 중: {TEMP_DIR}")
-        import stat
 
-        def remove_readonly(func, path, excinfo):
-            os.chmod(path, stat.S_IWRITE)
-            func(path)
+async def crawl(args: argparse.Namespace, config: CrawlerConfig) -> None:
+    """HTML 수집 명령 처리"""
+    logger.info(f"Starting crawl with concurrency={args.concurrency}...")
 
-        shutil.rmtree(TEMP_DIR, onerror=remove_readonly)
+    # T007: 시작 전 폴더 비우기
+    if args.clear:
+        temp_path = Path(config.temp_dir)
+        if temp_path.exists():
+            logger.info(f"Clearing temporary directory: {config.temp_dir}")
+            shutil.rmtree(temp_path)
 
-    TEMP_DIR.parent.mkdir(parents=True, exist_ok=True)
+    scraper = Scraper(concurrency_limit=args.concurrency)
+    session = CrawlSession()
 
-    logger.info(f"Django 5.2 문서를 {TEMP_DIR}에 클론 중...")
+    # 시작 URL 추가
+    normalized_seed = scraper.normalize_url(config.seed_url)
+    await session.queue.put(normalized_seed)
+    session.visited_urls.add(normalized_seed)
 
+    pbar = tqdm(total=1, desc="Crawling", unit="pg")
+
+    async def worker() -> None:
+        while True:
+            try:
+                url = await session.queue.get()
+            except asyncio.CancelledError:
+                break
+
+            try:
+                html, final_url = await scraper.fetch_url(url)
+                if html:
+                    # T006: 항상 덮어쓰기 저장
+                    # 저장 경로는 요청한 URL 구조를 따름 (일관성 유지)
+                    file_path = get_file_path(config.temp_dir, url, extension=".html")
+                    save_file(file_path, html)
+                    session.success_count += 1
+
+                    # 링크 추출 및 큐 추가
+                    soup = BeautifulSoup(html, "html.parser")
+                    for a_tag in soup.find_all("a", href=True):
+                        href = str(a_tag["href"])
+                        # 중요: 리다이렉션된 최종 URL을 베이스로 사용하여 상대 경로 결합
+                        full_url = urljoin(final_url, href)
+                        normalized_url = scraper.normalize_url(full_url)
+
+                        if (
+                            scraper.is_target_url(
+                                normalized_url,
+                                config.base_prefix,
+                                config.exclusion_prefixes,
+                            )
+                            and normalized_url not in session.visited_urls
+                        ):
+                            session.visited_urls.add(normalized_url)
+                            await session.queue.put(normalized_url)
+                            pbar.total += 1
+                else:
+                    session.failure_count += 1
+            except Exception as e:
+                logger.error(f"Error processing {url}: {e}")
+                session.failure_count += 1
+            finally:
+                pbar.set_postfix(ok=session.success_count, err=session.failure_count)
+                pbar.update(1)
+                session.queue.task_done()
+
+    # 동시성 제한에 따른 워커 생성
+    workers = [asyncio.create_task(worker()) for _ in range(config.concurrency_limit)]
+
+    # 큐가 비워질 때까지 대기
     try:
-        # Git Sparse Checkout 초기화 (객체 없는 얕은 클론)
-        subprocess.run(
-            [
-                "git",
-                "clone",
-                "--filter=blob:none",
-                "--no-checkout",
-                "--depth",
-                "1",
-                "--sparse",
-                "-b",
-                BRANCH,
-                REPO_URL,
-                str(TEMP_DIR),
-            ],
-            check=True,
-            capture_output=True,
-            text=True,
-        )
+        await session.queue.join()
+    except Exception as e:
+        logger.error(f"Error during queue processing: {e}")
 
-        # docs 디렉터리만 sparse-checkout 설정 및 체크아웃
-        subprocess.run(
-            ["git", "sparse-checkout", "set", "docs"],
-            cwd=str(TEMP_DIR),
-            check=True,
-            capture_output=True,
-        )
-        subprocess.run(["git", "checkout"], cwd=str(TEMP_DIR), check=True, capture_output=True)
+    # 워커 종료
+    for w in workers:
+        w.cancel()
 
-        logger.info("문서 클론이 성공적으로 완료되었습니다.")
-    except subprocess.CalledProcessError as e:
-        logger.error(f"Git 클론 중 오류 발생: {e.stderr}")
-        raise
+    pbar.close()
+    await scraper.close()
+    logger.info(
+        f"Crawl completed. Success: {session.success_count}, Failure: {session.failure_count}"
+    )
 
 
-def discover_rst_files() -> list[Path]:
-    """클론된 임시 디렉터리 내의 모든 RST(.txt) 파일을 재귀적으로 탐색합니다.
-    'docs/releases/' 디렉터리는 릴리즈 히스토리 노이즈 방지를 위해 제외합니다.
+async def convert(args: argparse.Namespace, config: CrawlerConfig) -> None:
+    """마크다운 변환 명령 처리"""
+    logger.info(f"Starting conversion for version {config.target_version}...")
 
-    Returns:
-        list[Path]: 탐색된 .txt 파일의 Path 객체 리스트.
-    """
-    docs_dir = TEMP_DIR / "docs"
-    if not docs_dir.exists():
-        logger.error(f"문서 디렉터리를 찾을 수 없습니다: {docs_dir}")
-        return []
+    # T007: 시작 전 폴더 비우기
+    if args.clear:
+        output_path = Path(config.output_dir)
+        if output_path.exists():
+            logger.info(f"Clearing output directory: {config.output_dir}")
+            shutil.rmtree(output_path)
 
-    # releases/ 디렉터리를 제외하고 탐색
-    rst_files = [
-        p
-        for p in docs_dir.rglob("*.txt")
-        if "releases" + os.sep not in str(p.relative_to(docs_dir))
-    ]
-    logger.info(f"총 {len(rst_files)}개의 RST(.txt) 파일을 발견했습니다. (releases/ 제외)")
-    return rst_files
+    temp_path = Path(config.temp_dir)
+    if not temp_path.exists():
+        logger.error(f"Temporary directory not found: {config.temp_dir}. Please run 'crawl' first.")
+        return
 
-
-def process_and_save_files(file_paths: list[Path]):
-    """탐색된 RST 파일들을 마크다운으로 변환하고 메타데이터를 추가하여 저장합니다.
-
-    원본 docs/ 폴더 내의 계층 구조를 유지하면서 data_sources/django-5.2-docs/ 하위에
-    .md 확장자로 결과물을 저장합니다.
-
-    Args:
-        file_paths (list[Path]): 변환할 RST 파일들의 경로 리스트.
-    """
-    docs_base_dir = TEMP_DIR / "docs"
+    # HTML 파일 탐색
+    html_files = list(temp_path.glob("**/*.html"))
+    logger.info(f"Found {len(html_files)} HTML files to convert.")
 
     success_count = 0
-    error_count = 0
+    failure_count = 0
 
-    for rst_path in file_paths:
+    # 선택자 설정 (명세: <article id="docs-content"> 또는 <main id="main-content">)
+    selectors = ["article#docs-content", "main#main-content"]
+
+    for html_file in tqdm(html_files, desc="Converting", unit="file"):
         try:
-            # 1. 파일 읽기
-            with open(rst_path, encoding="utf-8") as f:
-                rst_content = f.read()
+            # 상대 경로를 기반으로 원본 URL 재구성
+            relative_path = html_file.relative_to(temp_path)
+            url_path = str(relative_path).replace("\\", "/")
+            url_path = "" if url_path == "index.html" else url_path.replace(".html", "/")
 
-            # 2. 상대 경로 계산 (docs/ 이후의 경로)
-            relative_path = rst_path.relative_to(docs_base_dir)
+            source_url = urljoin(config.base_prefix, url_path)
 
-            # 3. 변환 및 메타데이터 추가
-            markdown_content = rst_to_markdown(rst_content)
-            final_content = add_metadata(markdown_content, str(relative_path))
+            html = html_file.read_text(encoding="utf-8")
 
-            # 4. 저장 경로 계산 및 디렉터리 생성
-            # .txt 확장자를 .md로 변경
-            save_rel_path = relative_path.with_suffix(".md")
-            save_path = OUTPUT_DIR / save_rel_path
+            # 본문 추출
+            content_html = extract_content(html, selectors=selectors)
 
-            save_path.parent.mkdir(parents=True, exist_ok=True)
+            # 마크다운 변환
+            md_content = to_markdown(content_html, source_url, target_version=config.target_version)
 
-            # 5. 저장
-            with open(save_path, "w", encoding="utf-8") as f:
-                f.write(final_content)
-
+            # 저장
+            output_file = get_file_path(config.output_dir, source_url, extension=".md")
+            save_file(output_file, md_content)
             success_count += 1
-            if success_count % 100 == 0:
-                logger.info(f"{success_count}개 파일 변환 완료...")
-
         except Exception as e:
-            logger.error(f"파일 변환 실패 ({rst_path}): {e}")
-            error_count += 1
+            logger.error(f"Failed to convert {html_file}: {e}")
+            failure_count += 1
 
-    logger.info(f"변환 작업 완료: 성공 {success_count}개, 실패 {error_count}개")
+    logger.info(f"Conversion completed. Success: {success_count}, Failure: {failure_count}")
 
 
-def main():
-    """Django 5.2 문서 크롤링 및 변환 파이프라인의 메인 진입점입니다.
+async def main() -> None:
+    parser = argparse.ArgumentParser(description="Django 5.2 Documentation Crawler & Converter")
+    subparsers = parser.add_subparsers(dest="command", help="Command to execute")
 
-    클론, 탐색, 변환 및 저장 과정을 순차적으로 수행합니다.
-    """
-    logger.info("Django 5.2 문서 크롤링을 시작합니다.")
+    # Common options
+    common_parser = argparse.ArgumentParser(add_help=False)
+    common_parser.add_argument(
+        "-c", "--concurrency", type=int, default=5, help="Max concurrent requests"
+    )
+    common_parser.add_argument(
+        "-v", "--version", type=str, default="5.2", help="Target Django version"
+    )
+    common_parser.add_argument(
+        "--clear", action="store_true", help="Clear output directory before starting"
+    )
 
-    try:
-        # 1. 문서 클론
-        clone_docs()
+    # Crawl command
+    subparsers.add_parser("crawl", parents=[common_parser], help="Crawl HTML from Django docs")
 
-        # 2. 파일 탐색
-        rst_files = discover_rst_files()
+    # Convert command
+    subparsers.add_parser(
+        "convert", parents=[common_parser], help="Convert collected HTML to Markdown"
+    )
 
-        if not rst_files:
-            logger.warning("변환할 파일을 찾지 못했습니다. 작업을 종료합니다.")
-            return
+    # All command (default)
+    subparsers.add_parser("all", parents=[common_parser], help="Crawl and then Convert")
 
-        # 3. 변환 및 저장
-        process_and_save_files(rst_files)
+    args = parser.parse_args()
+    if not args.command:
+        args.command = "all"
 
-        logger.info("Django 5.2 문서 크롤링 및 변환 파이프라인이 성공적으로 완료되었습니다.")
+    config = CrawlerConfig(concurrency_limit=args.concurrency, target_version=args.version)
 
-    except Exception as e:
-        logger.error(f"크롤링 파이프라인 실행 중 오류 발생: {e}")
-        raise
+    if args.command in ["crawl", "all"]:
+        await crawl(args, config)
+
+    if args.command in ["convert", "all"]:
+        await convert(args, config)
 
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())

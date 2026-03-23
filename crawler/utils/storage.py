@@ -2,30 +2,30 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 
-def get_file_path(base_dir: str, url: str) -> Path:
+def get_file_path(base_dir: str, url: str, extension: str = ".html") -> Path:
     """
     URL을 기반으로 로컬 파일 경로를 생성합니다.
 
     Args:
         base_dir (str): 파일이 저장될 기본 디렉토리 경로.
         url (str): 대상 URL.
+        extension (str): 파일 확장자 (.html 또는 .md). 기본값은 .html.
 
     Returns:
         Path: 생성된 로컬 파일 경로 객체.
     """
     parsed = urlparse(url)
-    path = parsed.path.strip("/")
+    # /en/5.2/ 접두사 이후의 경로만 추출 (정규화된 URL 가정)
+    path_parts = [p for p in parsed.path.split("/") if p]
 
-    if not path:
-        path = "index"
+    # Django 문서 구조 특화 처리: /en/5.2/ 부분을 건너뜀
+    if len(path_parts) >= 2 and path_parts[0] == "en" and path_parts[1] == "5.2":
+        path_parts = path_parts[2:]
 
-    if not path.endswith(".md"):
-        # 확장자가 없거나 디렉토리인 경우 .md를 추가합니다.
-        # .html로 끝나는 경우 .md로 대체합니다.
-        if path.endswith(".html"):
-            path = path[:-5] + ".md"
-        else:
-            path = path + ".md"
+    path = "index" if not path_parts else "/".join(path_parts)
+
+    if not path.endswith(extension):
+        path = path + extension
 
     # base_dir 하위에 URL 경로 구조를 그대로 유지하여 반환합니다.
     file_path = Path(base_dir) / path
