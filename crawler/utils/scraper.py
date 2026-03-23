@@ -1,6 +1,5 @@
 import asyncio
 import logging
-from pathlib import Path
 from urllib.parse import urlparse
 
 import httpx
@@ -29,21 +28,13 @@ class Scraper:
 
     @staticmethod
     def normalize_url(url: str) -> str:
-        """URL을 정규화합니다. (Fragment/Query 제거, 필요시 슬래시 추가)"""
+        """URL을 정규화합니다. (Fragment/Query 제거)"""
         parsed = urlparse(url)
         if not parsed.scheme or not parsed.netloc:
             return url
 
-        path = parsed.path
-        if not path:
-            path = "/"
-
-        # 확장자가 없는 디렉토리 형태의 경로인 경우에만 슬래시를 추가합니다.
-        # 장고 문서의 상대 경로 계산(../../../)을 위해 매우 중요합니다.
-        if not path.endswith("/") and not Path(path).suffix:
-            path += "/"
-
-        return f"{parsed.scheme}://{parsed.netloc}{path}"
+        # 스키마, 도메인, 경로만 유지하여 반환 (슬래시 강제 추가 제거)
+        return f"{parsed.scheme}://{parsed.netloc}{parsed.path}"
 
     def is_target_url(self, url: str, base_prefix: str, exclusion_prefixes: list[str]) -> bool:
         """크롤링 대상 도메인 및 경로인지 확인합니다."""

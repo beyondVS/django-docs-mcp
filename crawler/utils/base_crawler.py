@@ -77,16 +77,30 @@ class BaseCrawler:
                 try:
                     html, final_url = await scraper.fetch_url(url)
                     if html:
+                        # HTML 내부에 원본 URL 메타데이터 주입
+                        soup = BeautifulSoup(html, "html.parser")
+                        meta_tag = soup.new_tag(
+                            "meta", attrs={"name": "source-url", "content": final_url}
+                        )
+
+                        if soup.head:
+                            soup.head.insert(0, meta_tag)
+                        else:
+                            soup.insert(0, meta_tag)
+
+                        html_with_meta = str(soup)
+
                         file_path = get_file_path(
                             self.config.temp_dir,
                             url,
                             extension=".html",
                             strip_prefix=urlparse(self.config.base_prefix).path,
+                            seed_url=self.config.seed_url,
                         )
-                        save_file(file_path, html)
+                        save_file(file_path, html_with_meta)
                         session.success_count += 1
 
-                        soup = BeautifulSoup(html, "html.parser")
+                        # 링크 추출
                         for a_tag in soup.find_all("a", href=True):
                             href = str(a_tag["href"])
                             full_url = urljoin(final_url, href)
@@ -155,12 +169,20 @@ class BaseCrawler:
 
         for html_file in tqdm(html_files, desc=f"{self.config.name} Convert", unit="file"):
             try:
-                relative_path = html_file.relative_to(temp_path)
-                url_path = str(relative_path).replace("\\", "/")
-                url_path = "" if url_path == "index.html" else url_path.replace(".html", "/")
-
-                source_url = urljoin(self.config.base_prefix, url_path)
                 html = html_file.read_text(encoding="utf-8")
+                soup = BeautifulSoup(html, "html.parser")
+
+                # HTML 메타 태그로부터 원본 URL 복원
+                meta_tag = soup.find("meta", attrs={"name": "source-url"})
+                if meta_tag and meta_tag.get("content"):
+                    source_url = str(meta_tag.get("content"))
+                else:
+                    # 메타 태그가 없는 경우 기존 파일명 기반 추측 (하위 호환성)
+                    relative_path = html_file.relative_to(temp_path)
+                    url_path = str(relative_path).replace("\\", "/")
+                    if "_root_.html" in url_path:
+                        url_path = url_path.replace("_root_.html", "")
+                    source_url = urljoin(self.config.base_prefix, url_path)
 
                 content_html = extract_content(html, selectors=self.config.selectors)
                 md_content = to_markdown(
@@ -174,6 +196,7 @@ class BaseCrawler:
                     source_url,
                     extension=".md",
                     strip_prefix=urlparse(self.config.base_prefix).path,
+                    seed_url=self.config.seed_url,
                 )
                 save_file(output_file, md_content)
                 success_count += 1
