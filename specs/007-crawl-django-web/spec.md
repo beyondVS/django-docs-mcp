@@ -5,6 +5,24 @@
 **상태**: 준비 완료(Ready for Plan)
 **입력**: 사용자 설명: "django 5.2 문서 크롤링 기능의 동작을 변경 한다. 1. 기존 github 에서 체크아웃 하는 방식에서 https://docs.djangoproject.com/en/5.2/ 웹페이지를 크롤링 하는 방식으로 변경 - 기존 rst 파일을 markdown 으로 변환이 제대로 동작하지 않음(링크 깨짐. 내용 누락 등) 2. 크롤링 대상 - django 5.2 공식 문서 웹페이지 https://docs.djangoproject.com/en/5.2/ - 위 주소의 문서에서 <main id="main-content"> 영역의 내용 - 재귀적으로 해당 문서에서 링크가 있는 문서들 - https://docs.djangoproject.com/en/5.2/ 로 시작하는 하위 웹페이지 - 제외되야 하는 크롤링 대상 - 릴리즈 노트: https://docs.djangoproject.com/en/5.2/releases/ 및 해당 주소의 하위 주소 - 외부 사이트 - https://docs.djangoproject.com/en/5.2/ 로 시작하지 않는 주소 3. 문서의 양이 많으므로 작업을 다음같이 분리 한다. 1. 웹페이지 크롤링 HTML을 임시폴더에 저장. crawler/.temp/django-5.2-docs 2. 다운로드된 HTML을 마크다운으로 변환하여 data_sources/django-5.2-docs 폴더에 저장 4. 문서의 링크 중에 django 공식 문서로 연결되는 상대 링크는 완전한 링크로 만들어야 함. - <a class="reference internal" href=\"../../howto/logging/#logging-how-to\"><span class=\"std std-ref\">How to configure and use logging</span></a> - 위의 링크는 https://docs.djangoproject.com/en/5.2/howto/logging/#logging-how-to 로 연결됨 - RAG 검색 결과 CHUNK 에서도 https://docs.djangoproject.com/en/5.2/howto/logging/#logging-how-to 로 나와야 검색 결과를 가져다 사용하는 LLM 이 정상적으로 액세스 가능 함."
 
+## Clarifications
+
+### Session 2026-03-24
+- Q: 변환된 마크다운에서 이미지 링크는 어떻게 처리해야 합니까? → A: 이미지 src 속성을 장고 공식 사이트의 절대 URL로 변환하여 마크다운 이미지 문법(`![alt](https://...)`)으로 유지함.
+- Q: 크롤러가 HTML이 아닌 파일(ZIP, PDF 등) 링크를 발견했을 때 어떻게 처리해야 합니까? → A: HTML 페지만 재귀적으로 수집하며, 비-HTML 파일은 수집 대상에서 제외하고 링크만 절대 URL로 변환함.
+- Q: 수집 및 링크 추출 시 URL 끝의 슬래시(Trailing Slash)를 어떻게 처리해야 합니까? → A: 모든 URL 끝에 슬래시를 강제로 추가하여 통일(예: .../models/)하여 중복 방문을 방지함.
+- Q: 크롤링 작업의 진행 상황을 어떻게 모니터링해야 합니까? → A: CLI 터미널에 실시간 프로그레스 바(예: tqdm) 및 주요 수집 로그를 출력하여 진행 상태를 시각화함.
+- Q: 크롤러 요청 시 어떤 User-Agent 문자열을 사용해야 합니까? → A: 별도의 커스텀 식별자 없이 라이브러리(httpx)의 기본 User-Agent를 사용함.
+- Q: 변환된 마크다운 파일 상단에 메타데이터(YAML Front Matter)를 포함해야 합니까? → A: 예, URL, 제목, 버전 등의 정보를 포함하여 RAG 엔진이 문서의 출처를 쉽게 파악하도록 함.
+- Q: 크롤링(수집)과 변환 작업을 어떻게 실행해야 합니까? → A: 단일 실행 파일에서 인자를 통해 수집만, 변환만, 또는 전체 파이프라인을 실행할 수 있는 통합 인터페이스를 제공함.
+- Q: 마크다운 변환이 완료된 후 임시 HTML 파일들을 어떻게 처리해야 합니까? → A: 추후 디버깅이나 변환 로직 수정을 대비하여 삭제하지 않고 영구 유지함.
+- Q: 크롤링 시 탐색 깊이(Depth)나 도메인 범위에 대한 추가적인 제약이 필요합니까? → A: 별도의 깊이 제한 없이 https://docs.djangoproject.com/en/5.2/ 로 시작하는 모든 하위 페이지를 재귀적으로 수집함.
+- Q: 크롤링 시 자바스크립트 실행이 필요한 동적 콘텐츠를 수집해야 합니까? → A: 아니요, httpx를 사용하여 정적 HTML만 수집하며 자바스크립트 실행은 필요하지 않음.
+- Q: 크롤링 중단 시 이미 로컬에 저장된 HTML 파일들을 어떻게 처리해야 합니까? → A: Resume 모드를 기본으로 하여, 로컬 임시 폴더에 동일한 URL의 파일이 이미 존재하면 서버 요청을 건너뜀.
+- Q: 마크다운 파일을 저장할 때 URL의 계층 구조를 실제 디렉터리 구조로 재현해야 합니까? → A: 예, URL 경로를 실제 하위 디렉터리 계층으로 생성하여 파일을 체계적으로 관리함.
+- Q: 메타데이터에 기록할 제목(Title)은 어디서 추출합니까? → A: <article id="docs-content"> 태그 내의 첫 번째 H1 태그를 사용함.
+- Q: 원격 사이트에서 삭제된 고립된 로컬 파일들을 어떻게 처리해야 합니까? → A: 크롤링 완료 후, 이번 세션에서 방문(수집)되지 않은 모든 로컬 파일을 자동 삭제하여 데이터 정합성을 유지함.
+
 ## 사용자 시나리오 및 테스트 *(필수)*
 
 ### 사용자 스토리 1 - 웹 기반 문서 수집 (우선순위: P1)
@@ -58,19 +76,30 @@
 
 ### 기능적 요구 사항 (Functional Requirements)
 
-- **FR-001**: 시스템은 `https://docs.djangoproject.com/en/5.2/`를 시작점으로 하여 재귀적으로 문서를 탐색해야 함.
-- **FR-002**: 시스템은 반드시 `<main id="main-content">` 태그 내부의 데이터만 추출해야 함.
+- **FR-001**: 시스템은 `https://docs.djangoproject.com/en/5.2/`를 시작점으로 하여 별도의 깊이 제한 없이 해당 접두사(Prefix)로 시작하는 모든 하위 페이지를 재귀적으로 탐색해야 함.
+- **FR-002**: 시스템은 반드시 `<article id="docs-content">` (또는 폴백으로 `<main id="main-content">`) 태그 내부의 데이터만 추출해야 함.
 - **FR-003**: 시스템은 `https://docs.djangoproject.com/en/5.2/releases/` 및 그 하위 경로는 크롤링 대상에서 제외해야 함.
 - **FR-004**: 수집된 HTML은 `crawler/.temp/django-5.2-docs` 폴더에 임시 저장되어야 함.
 - **FR-005**: 시스템은 HTML을 마크다운으로 변환하여 `data_sources/django-5.2-docs`에 저장해야 함.
 - **FR-006**: 크롤링 시 `concurrency_limit=5`를 유지하여 대상 사이트에 과도한 부하를 주지 않아야 함 (기존 `orm_cookbook` 사례 준수).
 - **FR-007**: 수집 시 중복 방지를 위해 콘텐츠 해시(SHA-256)를 검증하며, 기존 데이터와 충돌 시 덮어쓰기(Full Overwrite) 방식으로 업데이트함.
+- **FR-008**: 시스템은 마크다운 변환 시 `<img>` 태그의 `src` 속성을 장고 공식 사이트의 절대 URL로 변환하여 마크다운 이미지 문법(`![alt](https://...)`)으로 유지해야 함.
+- **FR-009**: 시스템은 HTML 페지만 재귀적으로 수집하며, 비-HTML 파일(ZIP, PDF 등)은 수집 대상에서 제외하고 링크만 절대 URL로 변환해야 함.
+- **FR-010**: 시스템은 모든 수집 대상 URL 및 추출된 링크의 끝에 슬래시(/)를 강제로 추가(Trailing Slash)하여 정규화함으로써 중복 방문을 방지해야 함.
+- **FR-011**: 시스템은 크롤링 수행 시 터미널에 실시간 프로그레스 바를 표시하고, 수집된 페이지 수 및 현재 작업 중인 URL을 실시간으로 출력해야 함.
+- **FR-012**: 시스템은 HTTP 요청 시 별도의 커스텀 User-Agent를 설정하지 않고 라이브러리(httpx)의 기본값을 사용해야 함.
+- **FR-013**: 시스템은 마크다운 변환 시 파일 상단에 YAML Front Matter(URL, Title, Version)를 포함해야 하며, 제목은 `<article id="docs-content">` 내의 첫 번째 `<h1>` 태그에서 추출해야 함.
+- **FR-014**: 시스템은 수집(Crawl)과 변환(Convert)을 각각 또는 동시에 수행할 수 있는 통합 CLI 인터페이스를 제공해야 함.
+- **FR-015**: 수집된 HTML 임시 파일은 마크다운 변환 완료 후에도 삭제하지 않고 `crawler/.temp/django-5.2-docs`에 유지해야 함.
+- **FR-016**: 시스템은 별도의 브라우저 렌더링 엔진 없이 `httpx`를 통한 정적 HTML 수집 방식으로 작동해야 함.
+- **FR-017**: 시스템은 작업 효율성을 위해 Resume 기능을 지원해야 하며, `crawler/.temp/django-5.2-docs`에 이미 저장된 유효한 HTML 파일이 있는 URL은 수집 단계에서 건너뛰어야 함.
+- **FR-018**: 시스템은 크롤링 작업 완료 후, 로컬 저장소(`temp` 및 `data_sources`)에 존재하지만 이번 크롤링 과정에서 방문하지 않은 모든 파일을 삭제하여 원격지와의 동기화를 보장해야 함.
 
 ### 시스템 제약 사항 (System Constraints - Django Docs MCP)
 
 - **SYS-001**: 데이터 청킹 시 500~800 토큰 범위 및 10% 오버랩 유지 (파이썬 코드 블록은 절대 분할하지 않음).
 - **SYS-002**: 검색 API 반환 포맷은 `search_django_knowledge` 규격 준수.
-- **SYS-003**: 변환된 마크다운의 파일명은 원본 URL 구조를 반영하여 생성되어야 함.
+- **SYS-003**: 변환된 마크다운 파일은 원본 URL의 계층 구조를 반영하여 하위 디렉터리에 분산 저장되어야 함(예: `ref/models/fields.md`).
 
 ### 주요 엔티티
 
