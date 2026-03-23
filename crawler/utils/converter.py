@@ -75,9 +75,9 @@ def to_markdown(html_content: str, source_url: str, target_version: str = "5.2")
     # 메타데이터를 생성합니다.
     collected_at = datetime.now(UTC).isoformat()
     metadata = f"""---
-url: {source_url}
+source_url: {source_url}
 title: "{title}"
-version: {target_version}
+target_version: {target_version}
 collected_at: {collected_at}
 ---
 

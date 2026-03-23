@@ -98,8 +98,8 @@ def test_converter_to_markdown() -> None:
 
     md_output = to_markdown(html, url, target_version="5.2")
 
-    assert "url: https://docs.djangoproject.com/en/5.2/test/" in md_output
+    assert "source_url: https://docs.djangoproject.com/en/5.2/test/" in md_output
     assert 'title: "My Title"' in md_output
-    assert "version: 5.2" in md_output
+    assert "target_version: 5.2" in md_output
     assert "# My Title" in md_output
     assert "Hello World" in md_output
