@@ -29,8 +29,8 @@
 시스템 구축은 MVP부터 고도화 단계까지 3단계(Phase)로 나누어 진행됩니다.
 
 ### Phase 1: MVP (분리형 수동 파이프라인)
-*   **크롤러 스크립트:** 외부 웹/문서를 다운로드한 후, 컨테이너 내부의 공유 볼륨(로컬 파일)에 저장합니다.
-*   **Django Command:** 마크다운 파싱 및 청킹을 수행하고, `int8` ONNX 모델로 임베딩을 생성하여 PostgreSQL에 저장합니다.
+*   **크롤러 스크립트:** Django 공식 웹사이트를 재귀적으로 크롤링하여 HTML을 다운로드하고, 본문을 추출하여 마크다운으로 변환 후 로컬 저장소에 저장합니다.
+*   **Django Command:** 변환된 마크다운을 읽어 파싱 및 청킹을 수행하고, `int8` ONNX 모델로 임베딩을 생성하여 PostgreSQL에 저장합니다.
 
 ### Phase 2: 검색 품질 고도화 (하이브리드 & Late Interaction)
 *   **Hybrid Retrieval:** `django-paradedb`를 통해 BM25와 1,024차원 Dense 벡터 검색을 결합한 RRF 순위를 산출합니다.
