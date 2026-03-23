@@ -67,7 +67,7 @@ class IngestionService:
 
             # 1. 문서(Document) 객체 생성
             doc = Document.objects.create(
-                title=title,
+                title=title[:512],
                 target_version=version,
                 category=doc_category,
                 source_path=str(file_path.absolute()),
@@ -91,7 +91,10 @@ class IngestionService:
                         level = header_context.count(" > ") + 1
 
                     section = Section.objects.create(
-                        document=doc, title=header_context, level=level, order=len(sections_cache)
+                        document=doc,
+                        title=header_context[:1024],
+                        level=level,
+                        order=len(sections_cache),
                     )
                     sections_cache[header_context] = section
 
