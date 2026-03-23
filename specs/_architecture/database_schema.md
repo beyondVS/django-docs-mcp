@@ -17,11 +17,11 @@
 | 필드명 (Django Model) | 데이터 타입 | 설명 및 제약 사항 |
 | :--- | :--- | :--- |
 | `id` | UUIDField | PK (자동 생성) |
-| `title` | CharField | 문서 제목 (YAML Front Matter 또는 파일명 추출) |
-| `target_version` | CharField | 대상 프레임워크 버전 (예: "5.2") |
+| `title` | CharField | 문서 제목 (**YAML: `title`** 필드와 대응) |
+| `target_version` | CharField | 대상 프레임워크 버전 (**YAML: `target_version`** 필드와 대응) |
 | `category` | CharField | 문서 카테고리 (예: "Tutorials", "Reference") |
 | `source_path` | CharField | 로컬 파일 시스템의 절대 경로 (**Unique Index**) |
-| `source_url` | URLField | 공식 문서 웹 URL (선택 사항) |
+| `source_url` | URLField | 원본 웹 URL (**YAML: `source_url`** 필드와 대응) |
 | `status` | CharField | 검색 활성화 상태 ("Active" 또는 "Inactive") |
 | `created_at` / `updated_at` | DateTimeField | 레코드 생성 및 최종 수정 시각 |
 

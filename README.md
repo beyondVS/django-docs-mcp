@@ -39,6 +39,13 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 ```text
 .
 ├── crawler/            # 외부 웹/문서 크롤링 및 로컬 볼륨 마운트용 스크립트
+│   ├── utils/
+│   │   ├── base_crawler.py  # 공통 크롤링 및 변환 엔진 (BaseCrawler)
+│   │   ├── scraper.py       # 비동기 HTTP 클라이언트 및 정규화
+│   │   └── storage.py       # 로컬 파일 시스템 저장소 관리
+│   ├── django52_crawler.py  # Django 5.2 공식 문서 크롤러
+│   ├── orm_cookbook.py      # ORM Cookbook 크롤러
+│   └── admin_cookbook.py    # Admin Cookbook 크롤러
 ├── data_sources/       # 크롤링된 로컬 마크다운/문서 원본 저장소 (버전 관리 제외)
 ├── django_server/      # [Ingestion] 문서 파싱, 청킹, 임베딩, 하이브리드 검색 및 Late Interaction 리랭킹
 ├── mcp_server/         # [Serving] AI 에이전트 질의 응답용 FastMCP 서버
@@ -82,14 +89,14 @@ docker-compose up -d db
 ### 2. 크롤러 실행 (문서 다운로드)
 ```bash
 cd crawler
-# Django 5.2 공식 문서 (웹 크롤링 및 마크다운 변환)
-# --clear 옵션은 기존 수집된 데이터를 삭제하고 새로 수집합니다.
+# Django 5.2 공식 문서
 uv run python django52_crawler.py all --clear
 
 # Django ORM Cookbook
-uv run python orm_cookbook.py
+uv run python orm_cookbook.py all --clear
+
 # Django Admin Cookbook
-uv run python admin_cookbook.py
+uv run python admin_cookbook.py all --clear
 cd ..
 ```
 
@@ -109,7 +116,7 @@ uv run python src/manage.py ingest_docs --reindex
 # Django 5.2 공식 문서
 uv run python src/manage.py ingest_docs ../data_sources/django-5.2-docs/ --doc-version 5.2 --category Documentation
 # ORM Cookbook
-uv run python src/manage.py ingest_docs ../data_sources/django2-orm-cookbook/ --doc-version 2.2 --category Cookbook
+uv run python src/manage.py ingest_docs ../data_sources/django-orm-cookbook/ --doc-version 2.2 --category Cookbook
 # Admin Cookbook
 uv run python src/manage.py ingest_docs ../data_sources/django-admin-cookbook/ --doc-version 2.2 --category Cookbook
 ```

@@ -2,33 +2,40 @@ from pathlib import Path
 from urllib.parse import urlparse
 
 
-def get_file_path(base_dir: str, url: str, extension: str = ".html") -> Path:
+def get_file_path(
+    base_dir: str, url: str, extension: str = ".html", strip_prefix: str = ""
+) -> Path:
     """
     URL을 기반으로 로컬 파일 경로를 생성합니다.
 
     Args:
         base_dir (str): 파일이 저장될 기본 디렉토리 경로.
         url (str): 대상 URL.
-        extension (str): 파일 확장자 (.html 또는 .md). 기본값은 .html.
+        extension (str): 파일 확장자 (.html 또는 .md).
+        strip_prefix (str): 제거할 URL 경로 접두사 (예: "/en/5.2/").
 
     Returns:
         Path: 생성된 로컬 파일 경로 객체.
     """
     parsed = urlparse(url)
-    # /en/5.2/ 접두사 이후의 경로만 추출 (정규화된 URL 가정)
-    path_parts = [p for p in parsed.path.split("/") if p]
+    path = parsed.path
 
-    # Django 문서 구조 특화 처리: /en/5.2/ 부분을 건너뜀
-    if len(path_parts) >= 2 and path_parts[0] == "en" and path_parts[1] == "5.2":
-        path_parts = path_parts[2:]
+    # 접두사 제거 (예: /projects/django-admin-cookbook/en/latest/ -> /)
+    if strip_prefix and path.startswith(strip_prefix):
+        path = path[len(strip_prefix) :].lstrip("/")
 
-    path = "index" if not path_parts else "/".join(path_parts)
+    path_parts = [p for p in path.split("/") if p]
 
-    if not path.endswith(extension):
-        path = path + extension
+    filename = "index" if not path_parts else "/".join(path_parts)
 
-    # base_dir 하위에 URL 경로 구조를 그대로 유지하여 반환합니다.
-    file_path = Path(base_dir) / path
+    if not filename.endswith(extension):
+        # .html로 끝나는 요청인 경우 확장자 교체 처리
+        if filename.endswith(".html") and extension == ".md":
+            filename = filename[:-5] + ".md"
+        else:
+            filename = filename + extension
+
+    file_path = Path(base_dir) / filename
     return file_path
 
 
