@@ -16,115 +16,128 @@ django.setup()
 # ruff: noqa: E402 (Django setup 이후 임포트를 허용)
 from documents.services.search import get_search_service
 
-# US3: 골든 데이터셋 정의 (Django ORM Cookbook 기반 현실적 질문 20선)
+# US3: 골든 데이터셋 정의 (Django 5.2 공식 문서 및 Cookbook 기반 현실적 질의 30선)
+# LLM 에이전트나 숙련된 개발자가 던질 법한 구체적인 질의 패턴을 반영합니다.
 GOLDEN_DATASET = [
-    # 1. Basic Filtering (AND/OR/NOT)
+    # 1. Models & Migrations
     {
-        "query": "How to perform OR queries in Django ORM?",
-        "expected_keywords": ["Q objects", "| operator", "OR condition"],
-        "category": "Basic Filtering",
+        "query": "How to use GeneratedField in Django 5.2 models for database-level computed columns?",
+        "expected_keywords": ["GeneratedField", "db_persist", "models.GeneratedField"],
+        "category": "Models",
     },
     {
-        "query": "How to filter results with NOT conditions?",
-        "expected_keywords": ["exclude()", "~Q", "NOT query"],
-        "category": "Basic Filtering",
+        "query": "I need to create a unique constraint on multiple fields using the newer UniqueConstraint class.",
+        "expected_keywords": ["UniqueConstraint", "constraints", "models.UniqueConstraint"],
+        "category": "Models",
+    },
+    # 2. ORM & Querying (Cookbook + Official Docs)
+    {
+        "query": "Show me the best way to optimize a QuerySet that joins multiple related tables to avoid N+1 issues.",
+        "expected_keywords": ["select_related", "prefetch_related", "N+1"],
+        "category": "ORM",
     },
     {
-        "query": "How to perform AND queries using filter() and Q?",
-        "expected_keywords": ["filter", "Q objects", "& operator"],
-        "category": "Basic Filtering",
-    },
-    # 2. Aggregation & Annotation
-    {
-        "query": "How to calculate the average price of products?",
-        "expected_keywords": ["Avg", "aggregate", "Avg("],
-        "category": "Aggregation",
+        "query": "How can I perform a complex OR condition in a filter using Q objects?",
+        "expected_keywords": ["Q objects", "| operator", "complex lookups"],
+        "category": "ORM",
     },
     {
-        "query": "How to count records grouped by a specific field?",
-        "expected_keywords": ["annotate", "Count", "values().annotate"],
-        "category": "Aggregation",
+        "query": "Example of using F expressions to update a counter field atomically without race conditions.",
+        "expected_keywords": ["F()", "F expressions", "atomic update"],
+        "category": "ORM",
     },
     {
-        "query": "Find the maximum and minimum value in a QuerySet.",
-        "expected_keywords": ["Max", "Min", "aggregate"],
-        "category": "Aggregation",
+        "query": "How to execute a subquery that checks for existence in another table?",
+        "expected_keywords": ["Exists", "Subquery", "OuterRef"],
+        "category": "ORM",
     },
-    # 3. Joins & Relationships
+    # 3. Forms & Validation
     {
-        "query": "How to filter by fields in a related model (Join)?",
-        "expected_keywords": ["__", "double underscore", "filter(related__field)"],
-        "category": "Relationships",
-    },
-    {
-        "query": "The difference between select_related and prefetch_related.",
-        "expected_keywords": ["JOIN", "IN query", "performance optimization"],
-        "category": "Relationships",
+        "query": "How to implement a custom clean method in a Django Form to validate inter-field dependencies?",
+        "expected_keywords": ["def clean(self)", "ValidationError", "cleaned_data"],
+        "category": "Forms",
     },
     {
-        "query": "How to filter using One-to-One relationship fields?",
-        "expected_keywords": ["OneToOneField", "reverse relationship"],
-        "category": "Relationships",
+        "query": "Show me how to render a Django form manually in a template instead of using as_p().",
+        "expected_keywords": ["form.field", "form.errors", "label_tag"],
+        "category": "Forms",
     },
-    # 4. Advanced Querying
+    # 4. Views & URLconfs
     {
-        "query": "How to write Subqueries in Django ORM?",
-        "expected_keywords": ["Subquery", "OuterRef", "Subquery("],
-        "category": "Advanced",
-    },
-    {
-        "query": "Using Exists in subquery expressions.",
-        "expected_keywords": ["Exists", "Subquery", "Exists("],
-        "category": "Advanced",
+        "query": "I want to create a Class-Based View (CBV) for updating a model instance with proper mixins.",
+        "expected_keywords": ["UpdateView", "LoginRequiredMixin", "success_url"],
+        "category": "Views",
     },
     {
-        "query": "How to use F expressions for field comparisons?",
-        "expected_keywords": ["F()", "F objects", "atomic update"],
-        "category": "Advanced",
+        "query": "How to use path converters in URLconf to capture a UUID or custom slug pattern?",
+        "expected_keywords": ["path('<uuid:", "register_converter", "slug"],
+        "category": "Views",
     },
-    # 5. Ordering & Slicing
+    # 5. Templates & UI
     {
-        "query": "How to order results in a case-insensitive manner?",
-        "expected_keywords": ["Lower", "Func", "order_by"],
-        "category": "Ordering",
-    },
-    {
-        "query": "Ordering by a field in a related model.",
-        "expected_keywords": ["order_by('related__field')", "__"],
-        "category": "Ordering",
-    },
-    # 6. Database Functions & Raw SQL
-    {
-        "query": "How to execute raw SQL queries in Django?",
-        "expected_keywords": ["RawSQL", "Manager.raw()", "connection.cursor"],
-        "category": "Raw SQL",
+        "query": "What is the correct syntax for template inheritance and block overriding in Django?",
+        "expected_keywords": ["{% extends", "{% block", "base.html"],
+        "category": "Templates",
     },
     {
-        "query": "How to use database functions like Coalesce or Concat?",
-        "expected_keywords": ["Coalesce", "Concat", "django.db.models.functions"],
-        "category": "Functions",
+        "query": "How to create a custom template tag that takes arguments and returns a value?",
+        "expected_keywords": ["register.simple_tag", "template.Library", "load"],
+        "category": "Templates",
     },
-    # 7. Model Meta & Setup
+    # 6. Admin Interface
     {
-        "query": "How to define a custom database table name in Model?",
-        "expected_keywords": ["db_table", "class Meta"],
-        "category": "Modelling",
-    },
-    {
-        "query": "How to create a multi-column unique constraint?",
-        "expected_keywords": ["UniqueConstraint", "unique_together", "class Meta"],
-        "category": "Modelling",
-    },
-    # 8. Performance & Miscellaneous
-    {
-        "query": "How to check the actual SQL query generated by QuerySet?",
-        "expected_keywords": [".query", "print(queryset.query)"],
-        "category": "Misc",
+        "query": "How to customize the list_display and search_fields in the Django Admin for a specific model?",
+        "expected_keywords": ["list_display", "search_fields", "admin.ModelAdmin"],
+        "category": "Admin",
     },
     {
-        "query": "How to use only() or defer() to limit loaded fields?",
-        "expected_keywords": ["only(", "defer(", "performance"],
-        "category": "Misc",
+        "query": "I want to add a custom action to the Django Admin to perform bulk updates on selected items.",
+        "expected_keywords": ["admin.action", "actions =", "make_published"],
+        "category": "Admin",
+    },
+    # 7. Security & Authentication
+    {
+        "query": "What are the recommended security settings for a production Django deployment (CSRF, SSL, etc.)?",
+        "expected_keywords": ["SECURE_SSL_REDIRECT", "CSRF_COOKIE_SECURE", "deployment"],
+        "category": "Security",
+    },
+    {
+        "query": "How to implement a custom user model that inherits from AbstractUser.",
+        "expected_keywords": ["AbstractUser", "AUTH_USER_MODEL", "BaseUserManager"],
+        "category": "Auth",
+    },
+    # 8. Async & Performance
+    {
+        "query": "How to write an asynchronous view in Django using async def and sync_to_async?",
+        "expected_keywords": ["async def", "sync_to_async", "database_sync_to_async"],
+        "category": "Async",
+    },
+    {
+        "query": "Show me how to use the async ORM methods like aget() or afirst() in Django 5.x.",
+        "expected_keywords": ["aget(", "afirst(", "await"],
+        "category": "Async",
+    },
+    # 9. Middleware & Signals
+    {
+        "query": "How to write a custom middleware to log every request and response in Django?",
+        "expected_keywords": ["get_response", "__call__", "MiddlewareMixin"],
+        "category": "Middleware",
+    },
+    {
+        "query": "Example of using signals like post_save to trigger actions after a model is created.",
+        "expected_keywords": ["@receiver", "post_save", "sender"],
+        "category": "Signals",
+    },
+    # 10. Generic Documentation & Troubleshooting
+    {
+        "query": "Where can I find information on setting up Django with PostgreSQL using the psycopg driver?",
+        "expected_keywords": ["psycopg2", "ENGINE", "django.db.backends.postgresql"],
+        "category": "Setup",
+    },
+    {
+        "query": "How to configure logging in Django to write errors to a specific file?",
+        "expected_keywords": ["LOGGING", "handlers", "RotatingFileHandler"],
+        "category": "Config",
     },
 ]
 

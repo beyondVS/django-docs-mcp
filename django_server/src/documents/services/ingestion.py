@@ -59,20 +59,8 @@ class IngestionService:
         doc_category: str = str(metadata.get("category", category))
         source_url: str = str(metadata.get("source_url", ""))
 
-        # 1. 목차/인덱스 파일 제외 필터링 (최적화)
-        exclude_keywords = ["index", "latest", "toc", "genindex"]
-        filename_lower = file_path.name.lower()
-        if any(kw in filename_lower for kw in exclude_keywords):
-            logger.info(f"Skipping index/meta file: {file_path.name}")
-            # 필터링되어 스킵하더라도, DB에 해당 파일/버전이 이미 있다면
-            # 삭제하여 찌꺼기가 남지 않게 함
-            Document.objects.filter(
-                source_path=str(file_path.absolute()), target_version=version
-            ).delete()
-            return None
-
         with transaction.atomic():
-            # T011: 기존 동일 경로/버전 문서 삭제 (Upsert 효과)
+            # T011: 기존 동일 경로/버전 문서 삭제 (Upsert 효과 및 찌꺼기 제거)
             Document.objects.filter(
                 source_path=str(file_path.absolute()), target_version=version
             ).delete()

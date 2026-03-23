@@ -36,27 +36,25 @@ class DocumentsConfig(AppConfig):
         # 4. 실제 모델 로드 (Warm-up)
         try:
             from tqdm import tqdm
-
+            from django.conf import settings
             from documents.services.embedding import get_embedding_service
-            from documents.services.reranking import get_reranking_service
 
-            logger.info("Starting AI search models warm-up...")
+            # 환경 설정에 따른 모델명 결정
+            use_onnx = getattr(settings, "USE_ONNX_EMBEDDING", True)
+            model_display_name = "BGE-M3 (ONNX INT8)" if use_onnx else "BGE-M3 (Standard)"
 
-            # tqdm 로딩 바 설정 (총 2단계: 임베딩, 리랭커)
+            logger.info(f"Starting AI search model warm-up: {model_display_name}")
+
+            # tqdm 로딩 바 설정 (임베딩 모델 1단계)
             with tqdm(
-                total=2,
-                desc="🚀 AI Search Models",
-                bar_format="{l_bar}{bar:30}{r_bar}",
+                total=1,
+                desc="🚀 AI Search Model",
+                bar_format="{l_bar}{bar:25}{r_bar}",
             ) as pbar:
-                # 1. 임베딩 모델 로드
-                pbar.set_postfix_str("Loading Embedding (BGE-M3)...")
+                pbar.set_postfix_str(f"Loading {model_display_name}...")
                 get_embedding_service()
                 pbar.update(1)
-
-                # 2. 리랭커 모델 로드
-                pbar.set_postfix_str("Loading Reranker (ONNX INT8)...")
-                get_reranking_service()
-                pbar.update(1)
+                pbar.set_description(f"🚀 AI Search: {model_display_name} Loaded")
 
                 pbar.set_postfix_str("All Ready! ✅")
 
