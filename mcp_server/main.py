@@ -31,7 +31,7 @@ _recent_queries: set[str] = set()
 @mcp.tool()
 async def search_django_knowledge(
     query: str,
-    django_version: str,
+    django_version: str | None = None,
     document_type: str | None = None,
     max_results: int = 5,
 ) -> list[dict]:
