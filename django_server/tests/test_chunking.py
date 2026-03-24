@@ -33,6 +33,28 @@ Content 2
     assert found_h1
 
 
+def test_split_markdown_h4_headers(chunking_service: ChunkingService) -> None:
+    """H4 헤더 계층 구조가 메타데이터에 올바르게 보존되는지 테스트"""
+    markdown = """
+# Title
+## Section 1
+### Subsection 1.1
+#### Detail 1.1.1
+Content 1.1.1
+"""
+    chunks = chunking_service.split_markdown(markdown)
+
+    # H4 정보가 캡처되었는지 확인
+    h4_captured = any(c["metadata"].get("Header 4") == "Detail 1.1.1" for c in chunks)
+    assert h4_captured, "Header 4 metadata should be captured"
+
+    # header_context 에도 포함되었는지 확인
+    context_captured = any(
+        "Detail 1.1.1" in c["metadata"].get("header_context", "") for c in chunks
+    )
+    assert context_captured, "Header 4 should be part of header_context"
+
+
 def test_large_code_block_integrity(chunking_service: ChunkingService) -> None:
     """US2: 대형 코드 블록이 중간에 잘리지 않는지 테스트"""
     sample_path = Path(__file__).parent / "samples" / "large_code_block.md"
