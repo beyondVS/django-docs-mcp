@@ -9,7 +9,7 @@
 - [ ] T004 `uv sync --all-packages` 실행하여 새 프로젝트 의존성 설치
 
 ## 2단계: 기초 (Foundational) - Django 런타임 통합
-- [ ] T005 `mcp_server/main.py`에 Django 환경 초기화 로직 구현 (sys.path 추가 및 django.setup)
+- [ ] T005 `mcp_server/main.py`에 Django 환경 초기화 로직 구현 (`sys.path` 추가 및 `DJANGO_SETTINGS_MODULE="core.settings"` 설정 후 `django.setup()` 호출)
 - [ ] T006 `mcp_server/main.py`에서 `django.apps.apps.ready`를 확인하는 간단한 연결 테스트 도구 작성
 
 ## 3단계: 사용자 스토리 US1 - 에이전틱 문서 검색 (P1)
@@ -19,14 +19,14 @@
 - [ ] T007 [US1] `mcp_server/main.py`에 `search_django_docs` 도구 정의 및 파라미터(`query`, `django_version`, `max_results`) 설정
 - [ ] T008 [US1] 도구 설명(description)에 `spec.md` 및 `contracts/tool_contract.md`에 정의된 에이전틱 서치 가이드 삽입
 - [ ] T009 [US1] `django_server.src.documents.services.search` (또는 해당 검색 서비스)를 호출하여 하이브리드 검색 로직 연동
-- [ ] T010 [US1] 검색 결과를 `contracts/tool_contract.md`에 정의된 마크다운 텍스트 형식으로 변환하여 반환하는 로직 구현
+- [ ] T010 [US1] 검색 결과를 `contracts/tool_contract.md` 규격에 따라 `FastMCP.TextContent` 리스트 또는 구분된 마크다운 문자열로 변환 (청크 내용, 점수, 출처 URL 포함)
 
 ## 4단계: 사용자 스토리 US2 - 검색 로깅 및 품질 모니터링 (P2)
 **목표**: 개발자가 LLM의 검색 키워드와 전략을 추적할 수 있도록 상세 로그를 남김.
 **테스트**: 도구 호출 후 `stdout`에 약속된 JSON 포맷의 로그가 출력되는지 확인.
 
 - [ ] T011 [P] [US2] `mcp_server/logger.py` 생성 및 구조화된 JSON 로깅 유틸리티 구현
-- [ ] T012 [US2] `search_django_docs` 도구 내에 검색어, 검색 시간, 결과 수, 상위 점수를 기록하는 로그 코드 추가
+- [ ] T012 [US2] `search_django_docs` 도구 내에 검색어, 검색 시간, 결과 수, 상위 점수 및 반환된 청크 ID 리스트를 기록하는 로그 코드 추가
 
 ## 5단계: 사용자 스토리 US3 - 효율적인 검색 제어 (P3)
 **목표**: 동일 키워드 반복 검색을 방지하고 에이전트의 효율성을 높임.

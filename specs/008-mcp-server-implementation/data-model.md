@@ -27,6 +27,7 @@
 - `query`: LLM으로부터 전달받은 원본 검색어.
 - `results_count`: 검색된 총 결과 수.
 - `top_results`: 상위 3개 결과의 `title` 및 `score` 리스트.
+- `chunk_ids`: 반환된 문서 조각(Chunk)의 고유 식별자 리스트 (헌법 V.3 준수).
 - `agent_strategy_guide`: 도구 설명에 포함된 가이드 적용 여부.
 
 ---
