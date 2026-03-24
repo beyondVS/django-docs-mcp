@@ -1264,16 +1264,20 @@ wheels = [
 [[package]]
 name = "mcp-server"
 version = "0.1.0"
-source = { virtual = "mcp_server" }
+source = { editable = "mcp_server" }
 dependencies = [
-    { name = "django-server" },
+    { name = "django" },
     { name = "fastmcp" },
+    { name = "httpx" },
+    { name = "pydantic" },
 ]
 
 [package.metadata]
 requires-dist = [
-    { name = "django-server", virtual = "django_server" },
-    { name = "fastmcp", specifier = ">=3.1.0" },
+    { name = "django", specifier = "~=5.2" },
+    { name = "fastmcp", specifier = "~=3.1.1" },
+    { name = "httpx", specifier = "~=0.28.1" },
+    { name = "pydantic", specifier = ">=2.11.7" },
 ]
 
 [[package]]
