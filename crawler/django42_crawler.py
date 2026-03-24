@@ -5,7 +5,7 @@ from utils.base_crawler import BaseCrawler, CrawlerConfig
 
 async def main() -> None:
     config = CrawlerConfig(
-        name="Django 5.2 Docs",
+        name="Django 4.2 Docs",
         seed_url="https://docs.djangoproject.com/en/4.2/",
         base_prefix="https://docs.djangoproject.com/en/4.2/",
         exclusion_prefixes=["https://docs.djangoproject.com/en/4.2/releases/"],

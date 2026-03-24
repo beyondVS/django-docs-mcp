@@ -17,9 +17,10 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 
 ## ✨ 주요 특징 (Key Features)
 
+* **멀티 버전 지원 (Django 4.2 & 5.2)**: 현재 가장 널리 쓰이는 4.2 LTS 버전과 최신 5.2 버전의 공식 문서를 모두 지원하여 버전별 차이점을 정확히 검색할 수 있습니다.
 * **하이브리드 검색 (BM25 + Vector)**: `django-paradedb`를 활용하여 키워드 검색(BM25)과 `pgvector` 기반의 벡터 검색을 RRF(Reciprocal Rank Fusion) 알고리즘으로 통합하여 검색 정확도를 극대화했습니다.
 * **고성능 Late Interaction 리랭킹**: 실시간 문서 재임베딩 오버헤드를 제거하기 위해, 미리 저장된 128차원 압축 멀티벡터와 질문 벡터 간의 **MaxSim(최대 유사도 합)** 연산을 수행합니다. (지연 시간 1.5s → 0.3s 단축)
-* **단일 모델 통합 추론**: 하나의 `int8` 양자화 모델로 임베딩과 리랭킹을 모두 처리하여 메모리 효율을 높이고 추론 속도를 최적화했습니다.
+* **에이전틱 서치(Agentic Search) 최적화**: MCP 도구 설명을 통해 LLM이 스스로 검색어 전략을 수정하고 단계적으로 깊이 있는 정보를 탐색하도록 유도합니다.
 * **의미론적 2단계 청킹**: `MarkdownHeaderTextSplitter`로 문서 구조(H1~H3)를 파싱하고, `MarkdownTextSplitter`로 코드 블록을 보호하며 재분할하는 정교한 파이프라인을 제공합니다.
 * **코드 블록 무결성 보장**: `bge-m3` 모델의 넓은 컨텍스트(8,192 토큰)를 활용하여, 긴 파이썬 예제 코드도 잘림 없이 온전한 형태로 검색 결과에 제공합니다.
 
@@ -43,6 +44,7 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 │   │   ├── base_crawler.py  # 공통 크롤링 및 변환 엔진 (BaseCrawler)
 │   │   ├── scraper.py       # 비동기 HTTP 클라이언트 및 정규화
 │   │   └── storage.py       # 로컬 파일 시스템 저장소 관리
+│   ├── django42_crawler.py  # Django 4.2 공식 문서 크롤러
 │   ├── django52_crawler.py  # Django 5.2 공식 문서 크롤러
 │   ├── orm_cookbook.py      # ORM Cookbook 크롤러
 │   └── admin_cookbook.py    # Admin Cookbook 크롤러
@@ -79,8 +81,6 @@ uv sync --all-packages
 
 ## 🚦 시작하기 (Getting Started)
 
-현재 지식 베이스 구축 및 하이브리드 검색 엔진 단계가 완료되어 로컬에서 문서 적재 및 고성능 검색 테스트가 가능합니다.
-
 ### 1. 인프라 실행 (ParadeDB: PostgreSQL + pg_search + pgvector)
 ```bash
 docker-compose up -d db
@@ -91,42 +91,40 @@ docker-compose up -d db
 cd crawler
 # Django 5.2 공식 문서
 uv run python django52_crawler.py all --clear
+# Django 4.2 공식 문서
+uv run python django42_crawler.py all --clear
 
 # Django ORM Cookbook
 uv run python orm_cookbook.py all --clear
-
 # Django Admin Cookbook
 uv run python admin_cookbook.py all --clear
 cd ..
 ```
 
-### 3. Django Server 초기화 및 실행
+### 3. Django Server 초기화 및 데이터 적재
 ```bash
 cd django_server
 uv sync
 uv run python src/manage.py migrate
-```
 
-### 4. 데이터 적재 및 재인덱싱 (Django Command)
-```bash
-# 기존에 적재된 문서들에 대해 멀티벡터 데이터를 일괄 구축합니다.
-uv run python src/manage.py ingest_docs --reindex
-
-# 특정 경로의 마크다운 파일을 신규 적재합니다.
-# Django 5.2 공식 문서
+# Django 5.2 공식 문서 적재
 uv run python src/manage.py ingest_docs ../data_sources/django-5.2-docs/ --doc-version 5.2 --category Documentation
-# ORM Cookbook
+# Django 4.2 공식 문서 적재
+uv run python src/manage.py ingest_docs ../data_sources/django-4.2-docs/ --doc-version 4.2 --category Documentation
+# ORM Cookbook 적재
 uv run python src/manage.py ingest_docs ../data_sources/django-orm-cookbook/ --doc-version 2.2 --category Cookbook
-# Admin Cookbook
+# Admin Cookbook 적재
 uv run python src/manage.py ingest_docs ../data_sources/django-admin-cookbook/ --doc-version 2.2 --category Cookbook
 ```
 
-### 5. 검색 실험실(Playground) 및 평가
+### 4. MCP 서버 실행 (Serving)
+AI 에이전트(Claude Desktop 등)와 연동하기 위해 MCP 서버를 실행합니다.
 ```bash
-uv run python src/manage.py runserver
+cd mcp_server
+uv run main.py
 ```
-- **Playground 접속**: `http://127.0.0.1:8000/playground/` (하이브리드 및 MaxSim 점수 확인 가능)
-- **품질 평가 실행**: `uv run python scripts/evaluate_search.py` (MRR, Hit Rate 지표 분석)
+- **전송 방식**: SSE (Server-Sent Events)
+- **접속 주소**: `http://127.0.0.1:8080/sse`
 
 ## 📅 로드맵 및 진행 현황
 
@@ -137,15 +135,17 @@ uv run python src/manage.py runserver
     - [x] Late Interaction(MaxSim) 기반 고속 리랭커 통합
     - [x] 검색 품질 평가 프레임워크 구축 (MRR 지표 검증)
     - [x] 검색 품질 테스트용 웹 UI (Playground)
-- [ ] **Phase 3: MCP Server (Serving)**
-    - [ ] FastMCP 기반 서버 골격 구축
-    - [ ] 하이브리드 검색 도구(Tool) 및 문서 리소스(Resource) 구현
+- [x] **Phase 3: MCP Server (Serving)**
+    - [x] FastMCP 기반 서버 구축 (SSE 전송 방식)
+    - [x] 하이브리드 검색 도구(`search_django_knowledge`) 구현
+    - [x] 에이전틱 서치 가이드라인 및 로깅 시스템 통합
 - [x] **Phase 4: 문서 확장 및 고도화**
-    - [x] Django 공식 문서 전체 크롤링 및 적재 (5.2 LTS 완료)
+    - [x] Django 5.2 LTS 공식 문서 적재 완료
+    - [x] Django 4.2 LTS 공식 문서 적재 완료
     - [ ] 다국어 질의 성능 최적화 (bge-m3 튜닝)
 
 
 ### 🚨 트러블슈팅 (Troubleshooting)
 - **네트워크 타임아웃 & 429 Too Many Requests:** 크롤러는 `tenacity`를 활용해 자동으로 지수 백오프 기반 재시도를 수행합니다. 오류 발생 시 강제로 중단하지 말고 대기하세요.
-- **인코딩 오류:** 크롤링된 결과물은 자동으로 `UTF-8`로 변환되어 저장됩니다. Windows 환경 등에서 파일 읽기/쓰기 시 인코딩 문제가 발생하면 Python 실행 환경이 `UTF-8`을 기본으로 사용하는지 확인하세요.
+- **MCP 서버 연결 실패:** `uv run main.py` 실행 시 8080 포트가 이미 사용 중인지 확인하세요.
 - **본문 추출 정밀도:** Django 공식 문서 크롤러는 `<article id="docs-content">`를 우선적으로 추출하여 내비게이션 등 노이즈를 완벽히 제거합니다. 만약 본문이 누락된다면 `crawler/utils/converter.py`의 선택자 설정을 확인하세요.
