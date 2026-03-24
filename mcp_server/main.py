@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+from typing import Literal
 
 from fastmcp import FastMCP
 
@@ -17,10 +18,6 @@ if str(PROJECT_ROOT) not in sys.path:
 # Django 환경 변수 설정 및 초기화
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 
-import django  # noqa: E402
-
-django.setup()
-
 # MCP 서버 초기화
 mcp = FastMCP("Django Docs Search")
 
@@ -28,11 +25,18 @@ mcp = FastMCP("Django Docs Search")
 _recent_queries: set[str] = set()
 
 
-@mcp.tool()
+@mcp.tool(
+    name="search_django_knowledge",
+    timeout=5.0,
+    annotations={
+        "readOnlyHint": True,  # 데이터 변경이 없는 조회 전용임을 명시
+        "idempotentHint": True,  # 동일 쿼리에 대해 일관된 결과를 보장
+    },
+)
 async def search_django_knowledge(
     query: str,
-    django_version: str | None = None,
-    document_type: str | None = None,
+    django_version: Literal["2.x", "4.2", "5.2"] | None = None,
+    document_type: Literal["Documentation", "Cookbook"] | None = None,
     max_results: int = 5,
 ) -> list[dict]:
     """
@@ -46,6 +50,7 @@ async def search_django_knowledge(
     4. **품질 검증**: 리랭크 점수가 낮다면 검색어가 너무 모호할 수 있습니다.
        더 구체적인 키워드를 시도하세요.
     """
+
     from documents.services.search import get_search_service
 
     from mcp_server.logger import log_tool_call, logger
@@ -116,4 +121,4 @@ async def test_django_connection() -> str:
 
 if __name__ == "__main__":
     # MCP 서버 실행
-    mcp.run()
+    mcp.run(transport="sse", host="127.0.0.1", port=8080)
