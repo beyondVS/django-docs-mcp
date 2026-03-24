@@ -1,6 +1,6 @@
 ﻿# django-docs-mcp 개발 가이드라인 (Gemini Context)
 
-모든 기능 계획서에서 자동 생성되었습니다. 최종 업데이트: 2026-03-23
+모든 기능 계획서에서 자동 생성되었습니다. 최종 업데이트: 2026-03-24
 
 ## 1. 전역 지침 및 핵심 규칙 (수동 관리)
 
@@ -22,6 +22,8 @@
 - PostgreSQL (ParadeDB: pg_search + pgvector), `bytea` 필드를 통한 멀티벡터 저장 (005-optimize-search-rerank)
 - Python 3.13 + `docutils` (RST 파싱 및 Markdown 변환), `git` CLI (저장소 클론) (006-crawl-django-52-docs)
 - 로컬 파일 시스템 (`data_sources/django-5.2-docs/`) (006-crawl-django-52-docs)
+- Python 3.13 + `httpx` (Async HTTP), `beautifulsoup4` (HTML Parsing), `markdownify` (MD Conversion), `tqdm` (UI), `tenacity` (Retry) (007-crawl-django-web)
+- 로컬 파일 시스템 (Temporary HTML & Final Markdown) (007-crawl-django-web)
 
 - Python 3.13 + Django 5.2 (004-hybrid-search-rerank)
 - PostgreSQL + pgvector & pg_search (004-hybrid-search-rerank)
@@ -59,9 +61,9 @@ D:\Projects\Private\django-docs-mcp\
 - **Type Safety**: 모든 함수와 메서드에 명시적인 Type Hints 적용.
 
 ## 최근 변경 사항
+- 007-crawl-django-web: Added Python 3.13 + `httpx` (Async HTTP), `beautifulsoup4` (HTML Parsing), `markdownify` (MD Conversion), `tqdm` (UI), `tenacity` (Retry)
 - 006-crawl-django-52-docs: Added Python 3.13 + `docutils` (RST 파싱 및 Markdown 변환), `git` CLI (저장소 클론)
 - 005-optimize-search-rerank: Added Python 3.13 + `django-paradedb~=0.4.0`, `onnxruntime`, `optimum`, `numpy`
 
-- 004-hybrid-search-rerank: PostgreSQL + pgvector를 활용한 하이브리드 검색 및 리랭킹 파이프라인 구축
 
 ---

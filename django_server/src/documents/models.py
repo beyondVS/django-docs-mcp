@@ -19,7 +19,7 @@ class Document(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     title = models.CharField(
-        max_length=255, help_text="문서의 제목 (YAML Front Matter 또는 파일명)"
+        max_length=512, help_text="문서의 제목 (YAML Front Matter 또는 파일명)"
     )
     target_version = models.CharField(max_length=50, help_text="대상 Django 버전 (예: 5.2)")
     category = models.CharField(
@@ -39,7 +39,7 @@ class Document(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     if TYPE_CHECKING:
-        objects: Manager[Document]
+        objects: Manager["Document"]
     else:
         objects = models.Manager()
 
@@ -67,12 +67,12 @@ class Section(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     document = models.ForeignKey(Document, on_delete=models.CASCADE, related_name="sections")
-    title = models.CharField(max_length=512, help_text="섹션 제목 (헤더 텍스트)")
+    title = models.CharField(max_length=1024, help_text="섹션 제목 (헤더 텍스트)")
     level = models.IntegerField(help_text="헤더 깊이 (1: H1, 2: H2, 3: H3)")
     order = models.IntegerField(help_text="문서 내 섹션 순서")
 
     if TYPE_CHECKING:
-        objects: Manager[Section]
+        objects: Manager["Section"]
     else:
         objects = models.Manager()
 
@@ -94,7 +94,7 @@ class Chunk(models.Model):
     section = models.ForeignKey(Section, on_delete=models.CASCADE, related_name="chunks")
     content = models.TextField(help_text="분할된 텍스트 본문")
     section_title = models.CharField(
-        max_length=512, blank=True, help_text="검색 성능 향상을 위한 섹션 제목 데이타 (비정규화)"
+        max_length=1024, blank=True, help_text="검색 성능 향상을 위한 섹션 제목 데이타 (비정규화)"
     )
     embedding = VectorField(dimensions=1024, help_text="BGE-M3 1024차원 벡터 임베딩")
     multi_vector_low_dim = models.BinaryField(

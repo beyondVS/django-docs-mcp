@@ -39,6 +39,13 @@ AI 모델은 코드를 생성할 때 종종 과거 버전의 지식을 사용하
 ```text
 .
 ├── crawler/            # 외부 웹/문서 크롤링 및 로컬 볼륨 마운트용 스크립트
+│   ├── utils/
+│   │   ├── base_crawler.py  # 공통 크롤링 및 변환 엔진 (BaseCrawler)
+│   │   ├── scraper.py       # 비동기 HTTP 클라이언트 및 정규화
+│   │   └── storage.py       # 로컬 파일 시스템 저장소 관리
+│   ├── django52_crawler.py  # Django 5.2 공식 문서 크롤러
+│   ├── orm_cookbook.py      # ORM Cookbook 크롤러
+│   └── admin_cookbook.py    # Admin Cookbook 크롤러
 ├── data_sources/       # 크롤링된 로컬 마크다운/문서 원본 저장소 (버전 관리 제외)
 ├── django_server/      # [Ingestion] 문서 파싱, 청킹, 임베딩, 하이브리드 검색 및 Late Interaction 리랭킹
 ├── mcp_server/         # [Serving] AI 에이전트 질의 응답용 FastMCP 서버
@@ -82,12 +89,14 @@ docker-compose up -d db
 ### 2. 크롤러 실행 (문서 다운로드)
 ```bash
 cd crawler
-# Django 5.2 공식 문서 (Git Sparse Checkout 및 RST 변환)
-uv run python django52_crawler.py
+# Django 5.2 공식 문서
+uv run python django52_crawler.py all --clear
+
 # Django ORM Cookbook
-uv run python orm_cookbook.py
+uv run python orm_cookbook.py all --clear
+
 # Django Admin Cookbook
-uv run python admin_cookbook.py
+uv run python admin_cookbook.py all --clear
 cd ..
 ```
 
@@ -107,7 +116,7 @@ uv run python src/manage.py ingest_docs --reindex
 # Django 5.2 공식 문서
 uv run python src/manage.py ingest_docs ../data_sources/django-5.2-docs/ --doc-version 5.2 --category Documentation
 # ORM Cookbook
-uv run python src/manage.py ingest_docs ../data_sources/django2-orm-cookbook/ --doc-version 2.2 --category Cookbook
+uv run python src/manage.py ingest_docs ../data_sources/django-orm-cookbook/ --doc-version 2.2 --category Cookbook
 # Admin Cookbook
 uv run python src/manage.py ingest_docs ../data_sources/django-admin-cookbook/ --doc-version 2.2 --category Cookbook
 ```
@@ -139,4 +148,4 @@ uv run python src/manage.py runserver
 ### 🚨 트러블슈팅 (Troubleshooting)
 - **네트워크 타임아웃 & 429 Too Many Requests:** 크롤러는 `tenacity`를 활용해 자동으로 지수 백오프 기반 재시도를 수행합니다. 오류 발생 시 강제로 중단하지 말고 대기하세요.
 - **인코딩 오류:** 크롤링된 결과물은 자동으로 `UTF-8`로 변환되어 저장됩니다. Windows 환경 등에서 파일 읽기/쓰기 시 인코딩 문제가 발생하면 Python 실행 환경이 `UTF-8`을 기본으로 사용하는지 확인하세요.
-- **추출 실패 시 폴백:** 본문 추출 시 `readability-lxml`이 실패할 경우, 내부적으로 `BeautifulSoup`을 사용하여 주요 CSS 컨테이너(`.section`, `main` 등)를 탐색하도록 폴백(Fallback) 처리되어 있습니다. 빈 내용이 저장될 경우 `converter.py`의 폴백 셀렉터를 추가할 수 있습니다.
+- **본문 추출 정밀도:** Django 공식 문서 크롤러는 `<article id="docs-content">`를 우선적으로 추출하여 내비게이션 등 노이즈를 완벽히 제거합니다. 만약 본문이 누락된다면 `crawler/utils/converter.py`의 선택자 설정을 확인하세요.
