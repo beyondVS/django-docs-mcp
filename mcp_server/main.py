@@ -29,9 +29,15 @@ _recent_queries: set[str] = set()
 
 
 @mcp.tool()
-async def search_django_docs(query: str, django_version: str = "5.2", max_results: int = 5) -> str:
+async def search_django_knowledge(
+    query: str,
+    django_version: str,
+    document_type: str | None = None,
+    max_results: int = 5,
+) -> list[dict]:
     """
-    Django 공식 문서를 하이브리드 검색(Vector + BM25) 및 리랭킹(MaxSim)을 통해 검색합니다.
+    AI 에이전트가 Django 공식 가이드와 코드를 검색하기 위해 호출하는
+    RAG 기반 하이브리드 검색(Vector + BM25 + Rerank) 도구입니다.
 
     ### 🚀 에이전틱 서치 지침 (Agentic Search Guide):
     1. **키워드 최적화**: 구체적이고 명확한 키워드를 사용하세요.
@@ -53,41 +59,48 @@ async def search_django_docs(query: str, django_version: str = "5.2", max_result
     search_service = get_search_service()
 
     # Django 하이브리드 검색 서비스 호출 (Async)
+    # SearchService의 'category' 파라미터가 규약의 'document_type'에 대응함
     results = await search_service.search(
-        query=query, target_version=django_version, limit=max_results
+        query=query,
+        target_version=django_version,
+        category=document_type,
+        limit=min(max_results, 10),  # 규약상 최대 10개 제한
     )
 
     # 상세 로깅 (US2 & 헌법 V.3 준수)
     log_tool_call(
-        tool_name="search_django_docs",
+        tool_name="search_django_knowledge",
         query=query,
         results=results,
-        params={"django_version": django_version, "max_results": max_results},
+        params={
+            "django_version": django_version,
+            "document_type": document_type,
+            "max_results": max_results,
+        },
     )
 
-    if not results:
-        return f"No results found for query: '{query}'. Try using different keywords."
-
+    # mcp_tools_contract.md 규격에 맞춘 결과 변환
     formatted_results = []
-    for i, res in enumerate(results, 1):
-        # res는 dict 형태 (score/similarity, document_title, content, extra_meta 등 포함)
-        score = res.get("relevance_score") or res.get("similarity") or 0.0
-        title = res.get("document_title") or "No Title"
-        section = res.get("section_title") or ""
-        content = res.get("content", "No Content")
-        url = res.get("extra_meta", {}).get("source_url", "No URL")
-
-        full_title = f"{title} > {section}" if section else title
-
+    for res in results:
+        # SearchService 결과 필드 매핑
+        extra_meta = res.get("extra_meta", {})
         formatted_results.append(
-            f"[Result {i}] (Score: {score:.4f})\n"
-            f"Title: {full_title}\n"
-            f"URL: {url}\n"
-            f"Content:\n{content}\n"
-            f"{'=' * 40}"
+            {
+                "content": res.get("content", ""),
+                "target_version": res.get("version") or django_version,
+                "document_type": extra_meta.get("category", "unknown"),
+                "source_url": extra_meta.get("source_url", ""),
+                "relevance_score": res.get("relevance_score") or res.get("similarity") or 0.0,
+                "extra_meta": {
+                    "document_title": res.get("document_title"),
+                    "section_title": res.get("section_title"),
+                    "id": res.get("id"),
+                    **{k: v for k, v in extra_meta.items() if k not in ["source_url", "category"]},
+                },
+            }
         )
 
-    return "\n\n".join(formatted_results)
+    return formatted_results
 
 
 @mcp.tool()
