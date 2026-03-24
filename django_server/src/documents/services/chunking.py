@@ -30,6 +30,7 @@ class ChunkingService:
             ("#", "Header 1"),
             ("##", "Header 2"),
             ("###", "Header 3"),
+            ("####", "Header 4"),
         ]
         self.header_splitter = MarkdownHeaderTextSplitter(
             headers_to_split_on=self.headers_to_split_on, strip_headers=False
