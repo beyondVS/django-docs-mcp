@@ -18,6 +18,10 @@ if str(PROJECT_ROOT) not in sys.path:
 # Django 환경 변수 설정 및 초기화
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "core.settings")
 
+import django  # noqa: E402
+
+django.setup()
+
 # MCP 서버 초기화
 mcp = FastMCP("Django Docs Search")
 
