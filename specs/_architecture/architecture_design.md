@@ -70,7 +70,7 @@ graph TD
         %% 데이터 적재 파트
         subgraph Ingestion_Layer [데이터 수집 및 적재 계층]
             direction TB
-            Crawler[1. Crawler Script<br/>(Django 4.2, 5.2, Cookbooks)]:::worker
+            Crawler["1. Crawler Script<br/>(Django 4.2, 5.2, Cookbooks)"]:::worker
             DjangoCmd[3. Django Ingestion Command]:::worker
             Crawler -- "수집 (Markdown)" --> DjangoCmd
         end
@@ -95,7 +95,7 @@ graph TD
 
         %% 데이터 제공 파트
         subgraph Serving_Layer [MCP 인터페이스 계층]
-            FastMCP[FastMCP Server<br/>(SSE / Port 8080)]:::mcp
+            FastMCP["FastMCP Server<br/>(SSE / Port 8080)"]:::mcp
         end
 
         DjangoCmd -- "Dense + Multi-vector 생성" --> Model
